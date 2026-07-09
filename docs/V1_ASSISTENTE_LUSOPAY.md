@@ -12,6 +12,12 @@ Não cria links de pagamento. O foco é:
 ## Estrutura
 
 ```text
+f/
+  lib/
+  lusopay/
+  reconciliation/
+  customers/
+
 lib/
   merchant_context.ts
   lusopay_client.ts
@@ -39,6 +45,8 @@ customers/
   clientes_mais_ativos.ts
   clientes_com_pagamentos_pendentes.ts
 ```
+
+`f/` é a pasta sincronizada com Windmill. A estrutura na raiz mantém a fonte lógica e documentação do projeto.
 
 ## Merchant Context
 

@@ -1,0 +1,34 @@
+summary: ''
+description: ''
+lock: '!inline f/customers/listar_encomendas_cliente.script.lock'
+kind: script
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    customer_identifier:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    end_date:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    limit:
+      type: integer
+      description: ''
+      default: 50
+    merchant_id:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    start_date:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+  required:
+    - customer_identifier

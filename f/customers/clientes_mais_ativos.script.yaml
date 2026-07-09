@@ -1,0 +1,38 @@
+summary: ''
+description: ''
+lock: '!inline f/customers/clientes_mais_ativos.script.lock'
+kind: script
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    end_date:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    limit:
+      type: integer
+      description: ''
+      default: 10
+    merchant_id:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    sort_by:
+      type: string
+      description: ''
+      default: total_spent
+      enum:
+        - orders_count
+        - total_spent
+      originalType: enum
+    start_date:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+  required:
+    - start_date
+    - end_date

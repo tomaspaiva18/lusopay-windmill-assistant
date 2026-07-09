@@ -16,7 +16,8 @@
     "lib/**/*.ts",
     "lusopay/**/*.ts",
     "reconciliation/**/*.ts",
-    "customers/**/*.ts"
+    "customers/**/*.ts",
+    "f/**/*.ts"
   ],
   "extends": "./tsconfig.wmill.json"
 }

@@ -12,6 +12,12 @@ Esta V1 não cria links de pagamento. Implementa:
 ## Estrutura
 
 ```text
+f/
+  lib/
+  lusopay/
+  reconciliation/
+  customers/
+
 lib/
 lusopay/
 reconciliation/
@@ -19,6 +25,8 @@ customers/
 examples/
 docs/
 ```
+
+`f/` é a pasta que o Windmill CLI sincroniza. Os diretórios na raiz mantêm a estrutura lógica/fonte do projeto.
 
 ## Setup
 

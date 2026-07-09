@@ -1,0 +1,24 @@
+summary: ''
+description: ''
+lock: '!inline f/customers/resumo_cliente.script.lock'
+kind: script
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    customer_identifier:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    merchant_id:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    period_days:
+      type: integer
+      description: ''
+      default: 30
+  required:
+    - customer_identifier

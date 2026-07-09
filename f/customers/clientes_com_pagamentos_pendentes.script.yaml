@@ -1,0 +1,22 @@
+summary: ''
+description: ''
+lock: '!inline f/customers/clientes_com_pagamentos_pendentes.script.lock'
+kind: script
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    limit:
+      type: integer
+      description: ''
+      default: 20
+    merchant_id:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    older_than_days:
+      type: number
+      description: ''
+      default: null
+  required: []

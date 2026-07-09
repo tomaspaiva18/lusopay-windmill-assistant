@@ -1,0 +1,30 @@
+summary: ''
+description: ''
+lock: '!inline f/reconciliation/comparar_pagamentos_loja_lusopay.script.lock'
+kind: script
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    end_date:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    include_raw:
+      type: boolean
+      description: ''
+      default: false
+    merchant_id:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    start_date:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+  required:
+    - start_date
+    - end_date

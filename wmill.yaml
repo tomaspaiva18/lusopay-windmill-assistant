@@ -6,12 +6,10 @@
 defaultTs: bun                  # bun or deno
 
 # Glob patterns for files to include in sync
-includes: 
-  - "f/**"           # use ** for all, f/** for folder-scoped
-  - "lib/**"
-  - "lusopay/**"
-  - "customers/**"
-  - "reconciliation/**"
+includes:
+  - "f/lusopay/**"
+  - "f/customers/**"
+  - "f/reconciliation/**"
 
 # Additional glob patterns merged with includes (useful in workspace overrides)
 # extraIncludes: []
@@ -110,8 +108,11 @@ syncBehavior: v1                # v1 enables ownership preservation
 # Bundle TypeScript/JavaScript codebases that scripts import from.
 # Each entry is bundled and uploaded so scripts can import shared code.
 
-# Codebase bundling configurations for shared libraries
-codebases: []
+codebases:
+  - relative_path: ./f/lib
+    includes: ["**/*.ts"]
+    excludes: ["**/*.script.yaml", "**/*.script.lock"]
+    format: esm
 # codebases:
 #   - relative_path: ./shared          # path to the codebase
 #     includes: ["**/*.ts"]            # files to include in bundle

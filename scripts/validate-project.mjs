@@ -1,6 +1,13 @@
 import fs from 'node:fs';
 
 const required = [
+  'f/lib/merchant_context.ts',
+  'f/lib/lusopay_client.ts',
+  'f/lib/payment_normalizer.ts',
+  'f/lib/store_client.ts',
+  'f/reconciliation/comparar_pagamentos_loja_lusopay.ts',
+  'f/customers/obter_cliente.ts',
+  'f/lusopay/listar_pagamentos.ts',
   'lib/merchant_context.ts',
   'lib/lusopay_client.ts',
   'lib/payment_normalizer.ts',
@@ -33,5 +40,13 @@ for (const file of ['examples/mock_store_orders.json', 'examples/mock_customers.
   JSON.parse(fs.readFileSync(file, 'utf8'));
 }
 
-console.log('Project structure ok');
+const libMetadataFiles = fs
+  .readdirSync('f/lib', { recursive: true })
+  .map((file) => String(file))
+  .filter((file) => file.endsWith('.script.yaml') || file.endsWith('.script.lock'));
 
+if (libMetadataFiles.length > 0) {
+  throw new Error(`f/lib must stay as shared code, not Windmill scripts: ${libMetadataFiles.join(', ')}`);
+}
+
+console.log('Project structure ok');

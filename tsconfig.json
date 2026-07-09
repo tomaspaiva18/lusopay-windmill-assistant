@@ -5,9 +5,9 @@
     "moduleResolution": "Bundler",
     "strict": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "lib": ["ES2022", "DOM"]
   },
-  "include": ["windmill/**/*.ts"]
+  "include": ["lib/**/*.ts", "lusopay/**/*.ts", "reconciliation/**/*.ts", "customers/**/*.ts"]
 }
-

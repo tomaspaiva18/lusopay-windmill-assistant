@@ -42,6 +42,16 @@
     "store_status": "paid",
     "created_at": "2026-06-25T17:40:00Z",
     "payment_method": "card"
+  },
+  {
+    "order_id": "1007",
+    "customer_id": "c004",
+    "customer_name": "Rita Sousa",
+    "customer_email": "rita@example.com",
+    "amount": 18,
+    "currency": "EUR",
+    "store_status": "cancelled",
+    "created_at": "2026-07-02T11:10:00Z",
+    "payment_method": "mbway"
   }
 ]
-

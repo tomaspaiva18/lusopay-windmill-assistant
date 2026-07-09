@@ -13,6 +13,10 @@
     "id": "c003",
     "name": "Ana Martins",
     "email": "ana@example.com"
+  },
+  {
+    "id": "c004",
+    "name": "Rita Sousa",
+    "email": "rita@example.com"
   }
 ]
-

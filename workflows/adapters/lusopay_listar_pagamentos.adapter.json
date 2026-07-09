@@ -1,0 +1,163 @@
+{
+  "id": "LSPADPLST0000001",
+  "name": "ADAPTER - LusoPay - Listar pagamentos V1",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LSPERRLOG0000001"
+  },
+  "nodes": [
+    {
+      "id": "list-trigger",
+      "name": "Entrada do adapter",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -620,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "start_date",
+              "type": "string"
+            },
+            {
+              "name": "end_date",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "payment_method",
+              "type": "string"
+            },
+            {
+              "name": "order_id",
+              "type": "string"
+            },
+            {
+              "name": "min_amount",
+              "type": "number"
+            },
+            {
+              "name": "max_amount",
+              "type": "number"
+            },
+            {
+              "name": "limit",
+              "type": "number"
+            },
+            {
+              "name": "_tool",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "list-build-url",
+      "name": "Validar filtros e construir URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -380,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const p = $json;\nif (!$env.LUSOPAY_OWNER_ID) throw new Error('CONFIG_ERROR: LUSOPAY_OWNER_ID não configurado');\nconst validDate = v => !v || /^\\d{4}-\\d{2}-\\d{2}$/.test(String(v));\nif (!validDate(p.start_date) || !validDate(p.end_date)) throw new Error('VALIDATION_ERROR: datas inválidas; usar YYYY-MM-DD');\nif (p.start_date && p.end_date && p.start_date > p.end_date) throw new Error('VALIDATION_ERROR: start_date posterior a end_date');\nconst allowed = ['paid', 'pending', 'cancelled', 'canceled', 'failed', 'declined', 'refused', 'unknown'];\nif (p.status && !allowed.includes(String(p.status))) throw new Error('VALIDATION_ERROR: status não reconhecido');\nconst minAmount = p.min_amount === undefined || p.min_amount === null || p.min_amount === '' ? null : Number(p.min_amount);\nconst maxAmount = p.max_amount === undefined || p.max_amount === null || p.max_amount === '' ? null : Number(p.max_amount);\nif (minAmount !== null && !Number.isFinite(minAmount)) throw new Error('VALIDATION_ERROR: min_amount inválido');\nif (maxAmount !== null && !Number.isFinite(maxAmount)) throw new Error('VALIDATION_ERROR: max_amount inválido');\nif (minAmount !== null && maxAmount !== null && minAmount > maxAmount) throw new Error('VALIDATION_ERROR: min_amount maior que max_amount');\nconst base = $env.LUSOPAY_BASE_URL + '/' + $env.LUSOPAY_OWNER_ID + '/records/transactions_pbl_api_v3';\nconst q = [];\nif (p.start_date) q.push('creationPeriod=' + encodeURIComponent(p.start_date));\nif (p.end_date) q.push('creationPeriod=' + encodeURIComponent(p.end_date));\nreturn [{ json: { ...p, startedAt: Date.now(), requestUrl: base + (q.length ? '?' + q.join('&') : '') } }];"
+      }
+    },
+    {
+      "id": "list-http",
+      "name": "LusoPay GET transactions_pbl_api_v3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -120,
+        0
+      ],
+      "parameters": {
+        "url": "={{ $json.requestUrl }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpBasicAuth": {
+          "id": "REPLACE_AFTER_IMPORT",
+          "name": "LusoPay Basic Auth"
+        }
+      }
+    },
+    {
+      "id": "list-normalize",
+      "name": "Normalizar pagamentos LusoPay",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const req = $('Validar filtros e construir URL').first().json;\nconst response = $json;\nconst statusCode = Number(response.statusCode || 0);\nlet body = response.body ?? response;\nif (typeof body === 'string') {\n  try { body = JSON.parse(body); } catch { throw new Error('INVALID_RESPONSE: resposta LusoPay não é JSON válido'); }\n}\nif (statusCode === 401 || statusCode === 403) throw new Error('AUTH_ERROR: autenticação LusoPay recusada');\nif (statusCode === 404) throw new Error('NOT_FOUND: endpoint ou PID LusoPay não encontrado');\nif (statusCode >= 400) throw new Error('LUSOPAY_API_ERROR: HTTP ' + statusCode);\nif (!Array.isArray(body)) throw new Error('INVALID_RESPONSE: listagem LusoPay não é um array');\n\nfunction normalizeStatus(value) {\n  const v = String(value || '').toLowerCase();\n  if (['paid', 'pago', 'success', 'successful', 'confirmed'].includes(v)) return 'paid';\n  if (['pending', 'pendente', 'created', 'waiting'].includes(v)) return 'pending';\n  if (['cancelled', 'canceled', 'cancelado', 'canceled_by_user'].includes(v)) return 'cancelled';\n  if (['failed', 'declined', 'refused', 'error', 'falhado', 'recusado'].includes(v)) return 'failed';\n  return 'unknown';\n}\n\nfunction normalizeMethod(value) {\n  const v = String(value || '').toLowerCase();\n  if (v.includes('mbway') || v.includes('mb way')) return 'mbway';\n  if (v.includes('multibanco') || v === 'mb' || v.includes('reference')) return 'multibanco';\n  if (v.includes('card') || v.includes('visa') || v.includes('mastercard') || v.includes('cart')) return 'card';\n  return value || null;\n}\n\nfunction first(...values) {\n  return values.find(v => v !== undefined && v !== null && v !== '') ?? null;\n}\n\nconst payments = body.map((r) => {\n  const c = r.customValues || r.custom_values || {};\n  const amountRaw = first(c.AMT, c.amount, c.paid_amount, r.amount);\n  const statusRaw = first(c.PS, c.payment_status, c.status, r.status);\n  const methodRaw = first(c.CPM, c.PYM, c.chosen_payment_method, c.payment_method, r.paymentMethod);\n  const created = first(r.creationDate, r.createdAt, c.created_at, c.CD, c.creation_date);\n  const paid = first(c.paid_at, c.payment_date, c.PD, r.paymentDate);\n  return {\n    order_id: first(c.OID, c.order_id, r.orderId),\n    payment_status: normalizeStatus(statusRaw),\n    amount: Number.isFinite(Number(amountRaw)) ? Number(amountRaw) : 0,\n    currency: first(c.CUR, c.currency, r.currency) || 'EUR',\n    payment_method: normalizeMethod(methodRaw),\n    created_at: created,\n    paid_at: normalizeStatus(statusRaw) === 'paid' ? paid || created || null : null,\n    raw_source: 'lusopay',\n    raw: r\n  };\n});\n\nconst filtered = payments.filter((payment) => {\n  if (req.status && payment.payment_status !== normalizeStatus(req.status)) return false;\n  if (req.payment_method && String(payment.payment_method || '').toLowerCase() !== String(req.payment_method).toLowerCase()) return false;\n  if (req.order_id && String(payment.order_id || '') !== String(req.order_id)) return false;\n  if (req.min_amount !== undefined && req.min_amount !== null && req.min_amount !== '' && Number(payment.amount || 0) < Number(req.min_amount)) return false;\n  if (req.max_amount !== undefined && req.max_amount !== null && req.max_amount !== '' && Number(payment.amount || 0) > Number(req.max_amount)) return false;\n  return true;\n}).sort((a, b) => Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0));\nconst limited = req.limit ? filtered.slice(0, Number(req.limit)) : filtered;\n\nreturn [{\n  json: {\n    ok: true,\n    count: limited.length,\n    total_before_limit: filtered.length,\n    payments: limited,\n    filters: {\n      start_date: req.start_date || null,\n      end_date: req.end_date || null,\n      status: req.status || null,\n      payment_method: req.payment_method || null,\n      order_id: req.order_id || null,\n      min_amount: req.min_amount ?? null,\n      max_amount: req.max_amount ?? null,\n      limit: req.limit ?? null\n    },\n    log: {\n      timestamp: new Date().toISOString(),\n      tool: req._tool || 'listar_pagamentos',\n      parameters: {\n        start_date: req.start_date || null,\n        end_date: req.end_date || null,\n        status: req.status || null,\n        payment_method: req.payment_method || null,\n        order_id: req.order_id || null\n      },\n      duration_ms: Date.now() - req.startedAt,\n      result: 'success',\n      results_count: limited.length,\n      error: null\n    }\n  }\n}];"
+      }
+    }
+  ],
+  "connections": {
+    "Entrada do adapter": {
+      "main": [
+        [
+          {
+            "node": "Validar filtros e construir URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar filtros e construir URL": {
+      "main": [
+        [
+          {
+            "node": "LusoPay GET transactions_pbl_api_v3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LusoPay GET transactions_pbl_api_v3": {
+      "main": [
+        [
+          {
+            "node": "Normalizar pagamentos LusoPay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

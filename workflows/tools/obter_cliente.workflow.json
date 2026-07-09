@@ -1,0 +1,76 @@
+{
+  "id": "LSPTOOLCUS000001",
+  "name": "MCP Tool - obter_cliente",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LSPERRLOG0000001"
+  },
+  "nodes": [
+    {
+      "id": "tool-trigger",
+      "name": "Entrada MCP",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -520,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "customer_identifier",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "call-customer",
+      "name": "Buscar cliente na loja",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -220,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "INTERFACE - Loja - Obter cliente V1"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "customer_identifier": "={{ $json.customer_identifier }}"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Entrada MCP": {
+      "main": [
+        [
+          {
+            "node": "Buscar cliente na loja",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

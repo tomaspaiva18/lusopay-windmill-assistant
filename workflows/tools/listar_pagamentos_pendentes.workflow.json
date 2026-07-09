@@ -1,0 +1,110 @@
+{
+  "id": "LSPTOOLPND000001",
+  "name": "MCP Tool - listar_pagamentos_pendentes",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LSPERRLOG0000001"
+  },
+  "nodes": [
+    {
+      "id": "tool-trigger",
+      "name": "Entrada MCP",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -520,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "start_date",
+              "type": "string"
+            },
+            {
+              "name": "end_date",
+              "type": "string"
+            },
+            {
+              "name": "older_than_hours",
+              "type": "number"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "call-lusopay-pending",
+      "name": "Listar pending na LusoPay",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -220,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "ADAPTER - LusoPay - Listar pagamentos MOCK V1"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "start_date": "={{ $json.start_date }}",
+            "end_date": "={{ $json.end_date }}",
+            "status": "pending",
+            "_tool": "listar_pagamentos_pendentes"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "filter-pending-age",
+      "name": "Filtrar pendentes antigos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const input = $('Entrada MCP').first().json;\nconst olderThanHours = Number(input.older_than_hours || 0);\nconst cutoff = olderThanHours > 0 ? Date.now() - olderThanHours * 60 * 60 * 1000 : null;\nconst payments = ($json.payments || []).filter(p => !cutoff || (p.created_at && Date.parse(p.created_at) <= cutoff));\nreturn [{ json: {\n  ok: true,\n  count: payments.length,\n  total_pending: payments.reduce((sum, p) => sum + Number(p.amount || 0), 0),\n  older_than_hours: olderThanHours || null,\n  payments\n}}];"
+      }
+    }
+  ],
+  "connections": {
+    "Entrada MCP": {
+      "main": [
+        [
+          {
+            "node": "Listar pending na LusoPay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listar pending na LusoPay": {
+      "main": [
+        [
+          {
+            "node": "Filtrar pendentes antigos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

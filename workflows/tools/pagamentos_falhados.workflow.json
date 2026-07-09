@@ -1,0 +1,111 @@
+{
+  "id": "LSPTOOLFAILED01",
+  "name": "MCP Tool - pagamentos_falhados",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LSPERRLOG0000001"
+  },
+  "nodes": [
+    {
+      "id": "tool-trigger",
+      "name": "Entrada MCP",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -520,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "start_date",
+              "type": "string"
+            },
+            {
+              "name": "end_date",
+              "type": "string"
+            },
+            {
+              "name": "limit",
+              "type": "number"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "call-failed-payments",
+      "name": "Listar failed na LusoPay",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -220,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "ADAPTER - LusoPay - Listar pagamentos MOCK V1"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "start_date": "={{ $json.start_date }}",
+            "end_date": "={{ $json.end_date }}",
+            "status": "failed",
+            "limit": "={{ $json.limit }}",
+            "_tool": "pagamentos_falhados"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "summarize-failed-payments",
+      "name": "Resumo de falhados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const payments = $json.payments || [];\nreturn [{ json: {\n  ok: true,\n  count: payments.length,\n  total_failed_amount: payments.reduce((sum, p) => sum + Number(p.amount || 0), 0),\n  payments\n}}];"
+      }
+    }
+  ],
+  "connections": {
+    "Entrada MCP": {
+      "main": [
+        [
+          {
+            "node": "Listar failed na LusoPay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listar failed na LusoPay": {
+      "main": [
+        [
+          {
+            "node": "Resumo de falhados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,6 @@
+.env
+local-files/*
+!local-files/.gitkeep
+*.log
+node_modules/
+dist/

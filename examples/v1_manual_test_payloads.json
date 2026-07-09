@@ -1,0 +1,72 @@
+{
+  "obter_cliente": {
+    "customer_identifier": "joao@example.com"
+  },
+  "resumo_cliente": {
+    "customer_identifier": "joao@example.com",
+    "period_days": 30
+  },
+  "listar_encomendas_cliente": {
+    "customer_identifier": "joao@example.com",
+    "start_date": "2026-06-01",
+    "end_date": "2026-07-03",
+    "limit": 10
+  },
+  "clientes_mais_ativos": {
+    "start_date": "2026-06-01",
+    "end_date": "2026-07-03",
+    "sort_by": "total_spent",
+    "limit": 10
+  },
+  "clientes_com_pagamentos_pendentes": {
+    "older_than_days": 1,
+    "limit": 20
+  },
+  "listar_pagamentos": {
+    "start_date": "2026-07-01",
+    "end_date": "2026-07-03",
+    "status": "paid"
+  },
+  "obter_pagamento_por_order_id": {
+    "order_id": "1001"
+  },
+  "listar_pagamentos_pendentes": {
+    "start_date": "2026-06-01",
+    "end_date": "2026-07-03",
+    "older_than_hours": 24
+  },
+  "resumo_pagamentos": {
+    "start_date": "2026-07-01",
+    "end_date": "2026-07-03"
+  },
+  "comparar_pagamentos_loja_lusopay": {
+    "start_date": "2026-06-01",
+    "end_date": "2026-07-03"
+  },
+  "pagamentos_falhados": {
+    "start_date": "2026-06-01",
+    "end_date": "2026-07-03",
+    "limit": 10
+  },
+  "pagamentos_por_metodo": {
+    "start_date": "2026-06-01",
+    "end_date": "2026-07-03",
+    "payment_method": "mbway",
+    "status": "paid",
+    "limit": 10
+  },
+  "pagamentos_por_valor": {
+    "start_date": "2026-06-01",
+    "end_date": "2026-07-03",
+    "min_amount": 20,
+    "max_amount": 100,
+    "limit": 10
+  },
+  "relatorio_diario": {
+    "date": "2026-07-01"
+  },
+  "pagamentos_pagos_lusopay_pendentes_loja": {
+    "start_date": "2026-06-01",
+    "end_date": "2026-07-03"
+  }
+}

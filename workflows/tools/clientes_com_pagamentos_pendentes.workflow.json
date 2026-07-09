@@ -1,0 +1,103 @@
+{
+  "id": "LSPTOOLCUSPEND1",
+  "name": "MCP Tool - clientes_com_pagamentos_pendentes",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LSPERRLOG0000001"
+  },
+  "nodes": [
+    {
+      "id": "tool-trigger",
+      "name": "Entrada MCP",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -520,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "older_than_days",
+              "type": "number"
+            },
+            {
+              "name": "limit",
+              "type": "number"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "call-pending-orders",
+      "name": "Buscar pendentes loja",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -220,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "INTERFACE - Loja - Listar encomendas/pagamentos V1"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "pending"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "group-pending-customers",
+      "name": "Agrupar pendentes por cliente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const input = $('Entrada MCP').first().json;\nconst olderThanDays = Number(input.older_than_days || 0);\nconst cutoff = olderThanDays > 0 ? Date.now() - olderThanDays * 24 * 60 * 60 * 1000 : null;\nconst limit = Number(input.limit || 20);\nconst orders = ($json.orders || []).filter(o => o.normalized_status === 'pending' && (!cutoff || Date.parse(o.created_at) <= cutoff));\nconst map = new Map();\nfor (const o of orders) {\n  const row = map.get(o.customer_id) || { id: o.customer_id, name: o.customer_name, email: o.customer_email, pending_orders: [], total_pending: 0 };\n  row.pending_orders.push({ order_id: o.order_id, amount: o.amount, currency: o.currency, created_at: o.created_at });\n  row.total_pending += Number(o.amount || 0);\n  map.set(o.customer_id, row);\n}\nreturn [{ json: { count: map.size, customers: [...map.values()].slice(0, limit) } }];"
+      }
+    }
+  ],
+  "connections": {
+    "Entrada MCP": {
+      "main": [
+        [
+          {
+            "node": "Buscar pendentes loja",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar pendentes loja": {
+      "main": [
+        [
+          {
+            "node": "Agrupar pendentes por cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

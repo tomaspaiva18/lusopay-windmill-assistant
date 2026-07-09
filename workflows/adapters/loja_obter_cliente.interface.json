@@ -1,0 +1,58 @@
+{
+  "id": "STRADPCUS0000001",
+  "name": "INTERFACE - Loja - Obter cliente V1",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LSPERRLOG0000001"
+  },
+  "nodes": [
+    {
+      "id": "store-customer-trigger",
+      "name": "Entrada do adapter",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -260,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "customer_identifier",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "store-customer-contract",
+      "name": "Mock/interface de cliente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const p = $json;\nconst startedAt = Date.now();\nconst identifier = String(p.customer_identifier || '').toLowerCase().trim();\nif (!identifier) throw new Error('VALIDATION_ERROR: customer_identifier é obrigatório');\nconst customers = [\n  { id: 'c001', name: 'João Silva', email: 'joao@example.com' },\n  { id: 'c002', name: 'Maria Costa', email: 'maria@example.com' },\n  { id: 'c003', name: 'Ana Martins', email: 'ana@example.com' }\n];\nconst customer = customers.find(c =>\n  c.id.toLowerCase() === identifier ||\n  c.email.toLowerCase() === identifier ||\n  c.name.toLowerCase().includes(identifier)\n);\nreturn [{\n  json: {\n    found: Boolean(customer),\n    customer: customer || null,\n    message: customer ? null : 'Cliente não encontrado na interface da loja.',\n    log: {\n      timestamp: new Date().toISOString(),\n      tool: 'store_get_customer',\n      parameters: { customer_identifier: p.customer_identifier },\n      duration_ms: Date.now() - startedAt,\n      result: customer ? 'success' : 'not_found',\n      results_count: customer ? 1 : 0,\n      error: customer ? null : 'customer_not_found'\n    }\n  }\n}];"
+      }
+    }
+  ],
+  "connections": {
+    "Entrada do adapter": {
+      "main": [
+        [
+          {
+            "node": "Mock/interface de cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

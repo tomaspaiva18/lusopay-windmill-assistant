@@ -1,0 +1,89 @@
+{
+  "id": "LSPADPLSTMOCK001",
+  "name": "ADAPTER - LusoPay - Listar pagamentos MOCK V1",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LSPERRLOG0000001"
+  },
+  "nodes": [
+    {
+      "id": "list-mock-trigger",
+      "name": "Entrada do adapter",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -260,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "start_date",
+              "type": "string"
+            },
+            {
+              "name": "end_date",
+              "type": "string"
+            },
+            {
+              "name": "status",
+              "type": "string"
+            },
+            {
+              "name": "payment_method",
+              "type": "string"
+            },
+            {
+              "name": "order_id",
+              "type": "string"
+            },
+            {
+              "name": "min_amount",
+              "type": "number"
+            },
+            {
+              "name": "max_amount",
+              "type": "number"
+            },
+            {
+              "name": "limit",
+              "type": "number"
+            },
+            {
+              "name": "_tool",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "list-mock-code",
+      "name": "Mock pagamentos LusoPay",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const p = $json;\nconst startedAt = Date.now();\nconst payments = [\n  {\n    order_id: '1001',\n    payment_status: 'paid',\n    amount: 29.9,\n    currency: 'EUR',\n    payment_method: 'mbway',\n    created_at: '2026-07-01T10:02:00Z',\n    paid_at: '2026-07-01T10:04:00Z',\n    raw_source: 'lusopay_mock',\n    raw: { id: 'lp_mock_1001' }\n  },\n  {\n    order_id: '1002',\n    payment_status: 'paid',\n    amount: 54.5,\n    currency: 'EUR',\n    payment_method: 'multibanco',\n    created_at: '2026-07-01T12:32:00Z',\n    paid_at: '2026-07-01T13:10:00Z',\n    raw_source: 'lusopay_mock',\n    raw: { id: 'lp_mock_1002' }\n  },\n  {\n    order_id: '1005',\n    payment_status: 'pending',\n    amount: 42,\n    currency: 'EUR',\n    payment_method: 'card',\n    created_at: '2026-06-30T08:00:00Z',\n    paid_at: null,\n    raw_source: 'lusopay_mock',\n    raw: { id: 'lp_mock_1005' }\n  },\n  {\n    order_id: '1006',\n    payment_status: 'failed',\n    amount: 12,\n    currency: 'EUR',\n    payment_method: 'mbway',\n    created_at: '2026-06-29T18:20:00Z',\n    paid_at: null,\n    raw_source: 'lusopay_mock',\n    raw: { id: 'lp_mock_1006' }\n  }\n];\n\nconst filtered = payments\n  .filter(payment => !p.start_date || String(payment.created_at).slice(0, 10) >= p.start_date)\n  .filter(payment => !p.end_date || String(payment.created_at).slice(0, 10) <= p.end_date)\n  .filter(payment => !p.status || payment.payment_status === p.status)\n  .filter(payment => !p.payment_method || payment.payment_method === p.payment_method)\n  .filter(payment => !p.order_id || String(payment.order_id) === String(p.order_id))\n  .filter(payment => p.min_amount === undefined || p.min_amount === null || p.min_amount === '' || Number(payment.amount || 0) >= Number(p.min_amount))\n  .filter(payment => p.max_amount === undefined || p.max_amount === null || p.max_amount === '' || Number(payment.amount || 0) <= Number(p.max_amount))\n  .sort((a, b) => Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0));\nconst limited = p.limit ? filtered.slice(0, Number(p.limit)) : filtered;\n\nreturn [{\n  json: {\n    ok: true,\n    mock: true,\n    count: limited.length,\n    total_before_limit: filtered.length,\n    payments: limited,\n    filters: {\n      start_date: p.start_date || null,\n      end_date: p.end_date || null,\n      status: p.status || null,\n      payment_method: p.payment_method || null,\n      order_id: p.order_id || null,\n      min_amount: p.min_amount ?? null,\n      max_amount: p.max_amount ?? null,\n      limit: p.limit ?? null\n    },\n    log: {\n      timestamp: new Date().toISOString(),\n      tool: p._tool || 'listar_pagamentos',\n      parameters: {\n        start_date: p.start_date || null,\n        end_date: p.end_date || null,\n        status: p.status || null,\n        payment_method: p.payment_method || null,\n        order_id: p.order_id || null\n      },\n      duration_ms: Date.now() - startedAt,\n      result: 'mock_data',\n      results_count: limited.length,\n      error: null\n    }\n  }\n}];"
+      }
+    }
+  ],
+  "connections": {
+    "Entrada do adapter": {
+      "main": [
+        [
+          {
+            "node": "Mock pagamentos LusoPay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

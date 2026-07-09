@@ -1,0 +1,150 @@
+{
+  "id": "LSPTOOLCMPV1001",
+  "name": "MCP Tool - comparar_pagamentos_loja_lusopay",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LSPERRLOG0000001"
+  },
+  "nodes": [
+    {
+      "id": "tool-trigger",
+      "name": "Entrada MCP",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -520,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "start_date",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "end_date",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "call-lusopay-compare",
+      "name": "Buscar pagamentos LusoPay",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -220,
+        -120
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "ADAPTER - LusoPay - Listar pagamentos MOCK V1"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "start_date": "={{ $json.start_date }}",
+            "end_date": "={{ $json.end_date }}",
+            "_tool": "comparar_pagamentos_loja_lusopay"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "call-store-compare",
+      "name": "Buscar pagamentos loja",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -220,
+        120
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "INTERFACE - Loja - Listar encomendas/pagamentos V1"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "start_date": "={{ $('Entrada MCP').first().json.start_date }}",
+            "end_date": "={{ $('Entrada MCP').first().json.end_date }}"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "compare-results",
+      "name": "Comparar resultados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        120,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const luso = $('Buscar pagamentos LusoPay').first().json.payments || [];\nconst store = $('Buscar pagamentos loja').first().json.payments || [];\nconst lusoByOrder = new Map(luso.filter(p => p.order_id).map(p => [String(p.order_id), p]));\nconst storeByOrder = new Map(store.filter(p => p.order_id).map(p => [String(p.order_id), p]));\nconst issues = [];\nlet matched = 0;\nfor (const [orderId, lp] of lusoByOrder) {\n  const sp = storeByOrder.get(orderId);\n  if (!sp) { issues.push({ order_id: orderId, issue: 'only_in_lusopay', store_status: null, lusopay_status: lp.payment_status, store_amount: null, lusopay_amount: lp.amount }); continue; }\n  matched++;\n  if (sp.payment_status !== lp.payment_status) issues.push({ order_id: orderId, issue: 'status_mismatch', store_status: sp.payment_status, lusopay_status: lp.payment_status, store_amount: sp.amount, lusopay_amount: lp.amount });\n  if (Number(sp.amount) !== Number(lp.amount)) issues.push({ order_id: orderId, issue: 'amount_mismatch', store_status: sp.payment_status, lusopay_status: lp.payment_status, store_amount: sp.amount, lusopay_amount: lp.amount });\n}\nfor (const [orderId, sp] of storeByOrder) {\n  if (!lusoByOrder.has(orderId)) issues.push({ order_id: orderId, issue: 'only_in_store', store_status: sp.payment_status, lusopay_status: null, store_amount: sp.amount, lusopay_amount: null });\n}\nreturn [{ json: {\n  summary: {\n    matched,\n    only_in_lusopay: issues.filter(i => i.issue === 'only_in_lusopay').length,\n    only_in_store: issues.filter(i => i.issue === 'only_in_store').length,\n    status_mismatches: issues.filter(i => i.issue === 'status_mismatch').length,\n    amount_mismatches: issues.filter(i => i.issue === 'amount_mismatch').length\n  },\n  issues\n}}];"
+      }
+    }
+  ],
+  "connections": {
+    "Entrada MCP": {
+      "main": [
+        [
+          {
+            "node": "Buscar pagamentos LusoPay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar pagamentos LusoPay": {
+      "main": [
+        [
+          {
+            "node": "Buscar pagamentos loja",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar pagamentos loja": {
+      "main": [
+        [
+          {
+            "node": "Comparar resultados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

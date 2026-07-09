@@ -1,0 +1,107 @@
+{
+  "id": "LSPTOOLSUM000001",
+  "name": "MCP Tool - resumo_pagamentos",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LSPERRLOG0000001"
+  },
+  "nodes": [
+    {
+      "id": "tool-trigger",
+      "name": "Entrada MCP",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -520,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "start_date",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "end_date",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "call-lusopay-summary",
+      "name": "Listar período na LusoPay",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -220,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "ADAPTER - LusoPay - Listar pagamentos MOCK V1"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "start_date": "={{ $json.start_date }}",
+            "end_date": "={{ $json.end_date }}",
+            "_tool": "resumo_pagamentos"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "build-summary",
+      "name": "Calcular resumo",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const input = $('Entrada MCP').first().json;\nconst payments = $json.payments || [];\nconst byMethod = {};\nfor (const p of payments) byMethod[p.payment_method || 'unknown'] = (byMethod[p.payment_method || 'unknown'] || 0) + Number(p.amount || 0);\nconst count = status => payments.filter(p => p.payment_status === status).length;\nreturn [{ json: {\n  period: { start_date: input.start_date, end_date: input.end_date },\n  total_received: payments.filter(p => p.payment_status === 'paid').reduce((sum, p) => sum + Number(p.amount || 0), 0),\n  paid_count: count('paid'),\n  pending_count: count('pending'),\n  cancelled_count: count('cancelled'),\n  failed_count: count('failed'),\n  by_method: byMethod,\n  log: { timestamp: new Date().toISOString(), tool: 'resumo_pagamentos', results_count: payments.length }\n}}];"
+      }
+    }
+  ],
+  "connections": {
+    "Entrada MCP": {
+      "main": [
+        [
+          {
+            "node": "Listar período na LusoPay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Listar período na LusoPay": {
+      "main": [
+        [
+          {
+            "node": "Calcular resumo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

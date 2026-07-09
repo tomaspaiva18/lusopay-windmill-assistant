@@ -1,0 +1,101 @@
+{
+  "id": "LSPTOOLOID000001",
+  "name": "MCP Tool - obter_pagamento_por_order_id",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "LSPERRLOG0000001"
+  },
+  "nodes": [
+    {
+      "id": "tool-trigger",
+      "name": "Entrada MCP",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -520,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "order_id",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "call-lusopay-order",
+      "name": "Pesquisar pagamento na LusoPay",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -220,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "ADAPTER - LusoPay - Listar pagamentos MOCK V1"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "order_id": "={{ $json.order_id }}",
+            "_tool": "obter_pagamento_por_order_id"
+          },
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      }
+    },
+    {
+      "id": "select-order",
+      "name": "Selecionar pagamento",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const input = $('Entrada MCP').first().json;\nconst result = $json;\nconst payment = (result.payments || [])[0];\nif (!payment) {\n  return [{ json: { found: false, order_id: String(input.order_id), message: 'Nenhum pagamento encontrado na LusoPay para este order_id.' } }];\n}\nreturn [{ json: {\n  found: true,\n  order_id: payment.order_id,\n  status: payment.payment_status,\n  amount: payment.amount,\n  payment_method: payment.payment_method,\n  created_at: payment.created_at,\n  paid_at: payment.paid_at\n}}];"
+      }
+    }
+  ],
+  "connections": {
+    "Entrada MCP": {
+      "main": [
+        [
+          {
+            "node": "Pesquisar pagamento na LusoPay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pesquisar pagamento na LusoPay": {
+      "main": [
+        [
+          {
+            "node": "Selecionar pagamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,46 @@
+name: lusopay-mcp
+
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:${N8N_VERSION:-2.26.8}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${N8N_PORT:-5678}:5678"
+    environment:
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: 5678
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      N8N_EDITOR_BASE_URL: ${N8N_EDITOR_BASE_URL:-http://localhost:5678}
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678/}
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      N8N_SECURE_COOKIE: ${N8N_SECURE_COOKIE:-false}
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-Europe/Lisbon}
+      TZ: ${GENERIC_TIMEZONE:-Europe/Lisbon}
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: ${EXECUTIONS_DATA_SAVE_ON_SUCCESS:-none}
+      EXECUTIONS_DATA_SAVE_ON_ERROR: ${EXECUTIONS_DATA_SAVE_ON_ERROR:-all}
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: ${EXECUTIONS_DATA_MAX_AGE:-168}
+      LUSOPAY_BASE_URL: ${LUSOPAY_BASE_URL:-https://dev.lusopay.com:8444/web_dev/api}
+      LUSOPAY_OWNER_ID: ${LUSOPAY_OWNER_ID}
+      LUSOPAY_DEFAULT_LANGUAGE: ${LUSOPAY_DEFAULT_LANGUAGE:-pt_PT}
+      LUSOPAY_DEFAULT_PAYMENT_METHODS: ${LUSOPAY_DEFAULT_PAYMENT_METHODS:-P0}
+      LUSOPAY_FINAL_URL: ${LUSOPAY_FINAL_URL:-}
+      STORE_ADAPTER_TYPE: ${STORE_ADAPTER_TYPE:-none}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./local-files:/files
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --spider -q http://localhost:5678/healthz || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  n8n_data:

@@ -1,0 +1,13 @@
+{
+  "name": "lusopay-windmill-assistant",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "validate": "node scripts/validate-project.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
+

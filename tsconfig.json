@@ -7,7 +7,16 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "skipLibCheck": true,
-    "lib": ["ES2022", "DOM"]
+    "lib": [
+      "ES2022",
+      "DOM"
+    ]
   },
-  "include": ["lib/**/*.ts", "lusopay/**/*.ts", "reconciliation/**/*.ts", "customers/**/*.ts"]
+  "include": [
+    "lib/**/*.ts",
+    "lusopay/**/*.ts",
+    "reconciliation/**/*.ts",
+    "customers/**/*.ts"
+  ],
+  "extends": "./tsconfig.wmill.json"
 }

@@ -5,4 +5,8 @@ node_modules/
 dist/
 *.log
 .windmill/
-
+.agents/
+.claude/
+AGENTS.md
+AGENTS.wmill.md
+CLAUDE.md

@@ -100,6 +100,23 @@ Suporta:
 - resposta crua;
 - erros HTTP consistentes.
 
+## Segurança
+
+Medidas implementadas:
+
+- credenciais passam sempre pelo `MerchantContext`;
+- nenhum script hardcoda credenciais;
+- `raw` da LusoPay não é devolvido por defeito;
+- scripts de pagamento aceitam `include_raw`, por defeito `false`;
+- mensagens de erro e logs usam redaction para `password`, `username`, `authorization`, `token`, `secret`, `api_key` e equivalentes;
+- queries por intervalo estão limitadas a 90 dias por defeito em `lib/date_utils.ts`.
+
+Para produção:
+
+- guardar `LUSOPAY_PASSWORD` como Windmill Secret;
+- não passar credenciais em JSON manual de execução;
+- resolver `merchant_id` a partir do utilizador autenticado, não do prompt livre.
+
 ## Scripts
 
 ### Pagamentos
@@ -183,4 +200,3 @@ TODO futuro:
 - Quantas encomendas fez o cliente João nos últimos 30 dias?
 - Quanto gastou a Maria este mês?
 - Quem foram os clientes que mais compraram esta semana?
-

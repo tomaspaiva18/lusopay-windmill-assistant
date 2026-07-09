@@ -8,10 +8,11 @@ export async function main(
   start_date?: string,
   end_date?: string,
   older_than_hours?: number,
+  include_raw = false,
 ) {
   const merchant = await getMerchantContext(merchant_id);
   const raw = await fetchTransactions(merchant, { start_date, end_date });
-  const payments = filterPayments(normalizeLusopayPayments(raw), { status: 'pending' })
+  const payments = filterPayments(normalizeLusopayPayments(raw, { include_raw }), { status: 'pending' })
     .filter((payment) => isOlderThanHours(payment.created_at, older_than_hours));
 
   return {
@@ -20,4 +21,3 @@ export async function main(
     payments,
   };
 }
-

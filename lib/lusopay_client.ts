@@ -1,6 +1,6 @@
 import type { MerchantContext } from './types.ts';
 import { validateDateRange } from './date_utils.ts';
-import { LusopayApiError } from './errors.ts';
+import { LusopayApiError, redactSensitiveData } from './errors.ts';
 
 export type FetchTransactionsParams = {
   start_date?: string;
@@ -48,7 +48,14 @@ export async function fetchTransactions(context: MerchantContext, params: FetchT
     throw new LusopayApiError('Endpoint ou PID LusoPay não encontrado', response.status);
   }
   if (!response.ok) {
-    throw new LusopayApiError(`Erro HTTP da LusoPay: ${response.status}`, response.status);
+    let detail = '';
+    try {
+      detail = JSON.stringify(redactSensitiveData(await response.clone().json()));
+    } catch {
+      detail = await response.text().catch(() => '');
+      detail = String(redactSensitiveData(detail)).slice(0, 300);
+    }
+    throw new LusopayApiError(`Erro HTTP da LusoPay: ${response.status}${detail ? ` ${detail}` : ''}`, response.status);
   }
 
   const body = await response.json();
@@ -61,4 +68,3 @@ export async function fetchTransactions(context: MerchantContext, params: FetchT
 export function fetchTransactionsByPeriod(context: MerchantContext, startDate: string, endDate: string) {
   return fetchTransactions(context, { start_date: startDate, end_date: endDate });
 }
-

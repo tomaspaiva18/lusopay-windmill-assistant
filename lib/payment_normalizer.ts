@@ -22,7 +22,11 @@ export function normalizePaymentMethod(value: unknown): string | null {
   return original || null;
 }
 
-export function normalizeLusopayPayment(raw: any): NormalizedPayment {
+export type NormalizePaymentOptions = {
+  include_raw?: boolean;
+};
+
+export function normalizeLusopayPayment(raw: any, options: NormalizePaymentOptions = {}): NormalizedPayment {
   const custom = raw?.customValues || raw?.custom_values || {};
   const statusRaw = first(custom.PS, custom.payment_status, custom.status, raw?.status);
   const methodRaw = first(custom.CPM, custom.PYM, custom.chosen_payment_method, custom.payment_method, raw?.paymentMethod);
@@ -40,12 +44,12 @@ export function normalizeLusopayPayment(raw: any): NormalizedPayment {
     created_at: created as string | null,
     paid_at: paymentStatus === 'paid' ? ((paid || created) as string | null) : null,
     raw_source: 'lusopay',
-    raw,
+    ...(options.include_raw ? { raw } : {}),
   };
 }
 
-export function normalizeLusopayPayments(rawRecords: unknown[]): NormalizedPayment[] {
-  return rawRecords.map((record) => normalizeLusopayPayment(record));
+export function normalizeLusopayPayments(rawRecords: unknown[], options: NormalizePaymentOptions = {}): NormalizedPayment[] {
+  return rawRecords.map((record) => normalizeLusopayPayment(record, options));
 }
 
 export function filterPayments(payments: NormalizedPayment[], filters: {
@@ -78,4 +82,3 @@ export function summarizePayments(payments: NormalizedPayment[]) {
     by_method,
   };
 }
-

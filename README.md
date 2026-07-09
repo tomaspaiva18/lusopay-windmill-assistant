@@ -33,6 +33,12 @@ MERCHANT_ID=demo-store
 MERCHANT_NAME=Loja Demo
 ```
 
+Segurança por defeito:
+
+- `raw` da LusoPay não é devolvido salvo se `include_raw=true`;
+- dados sensíveis são redigidos em erros/logs;
+- intervalos de consulta estão limitados a 90 dias.
+
 ## Validação local
 
 ```powershell

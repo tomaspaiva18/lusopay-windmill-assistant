@@ -3,13 +3,19 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "tsc --noEmit",
-    "validate": "node scripts/validate-project.mjs"
+    "check": "tsc --noEmit && tsc -p mcp-server/tsconfig.json --noEmit",
+    "validate": "node scripts/validate-project.mjs",
+    "mcp:smoke": "npm run mcp:build && node scripts/mcp-smoke-test.mjs",
+    "mcp:build": "tsc -p mcp-server/tsconfig.json",
+    "mcp:start": "node mcp-server/dist/index.js"
   },
   "devDependencies": {
+    "@types/node": "^26.1.1",
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "windmill-client": "^1.753.0"
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "windmill-client": "^1.753.0",
+    "zod": "^4.4.3"
   }
 }

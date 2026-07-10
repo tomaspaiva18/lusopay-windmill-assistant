@@ -30,6 +30,15 @@ const required = [
   'examples/mock_store_orders.json',
   'examples/mock_customers.json',
   'docs/V1_ASSISTENTE_LUSOPAY.md',
+  'docs/MCP_SERVER.md',
+  'scripts/mcp-smoke-test.mjs',
+  'mcp-server/tsconfig.json',
+  'mcp-server/src/index.ts',
+  'mcp-server/src/auth.ts',
+  'mcp-server/src/config.ts',
+  'mcp-server/src/security.ts',
+  'mcp-server/src/tools.ts',
+  'mcp-server/src/windmill.ts',
 ];
 
 for (const file of required) {

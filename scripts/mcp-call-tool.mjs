@@ -1,14 +1,37 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import fs from 'node:fs';
 
-const [toolName = 'listar_pagamentos', rawArgs = '{"status":"paid","include_raw":false}'] = process.argv.slice(2);
+const [toolName = 'listar_pagamentos', ...rawArgParts] = process.argv.slice(2);
+const rawArgs = rawArgParts.length > 0 ? rawArgParts.join(' ') : '{"status":"paid","include_raw":false}';
 
-let args;
-try {
-  args = JSON.parse(rawArgs);
-} catch (error) {
-  throw new Error(`Second argument must be JSON. Received: ${rawArgs}`);
+function normalizeJsonArgument(value) {
+  const trimmed = value.trim();
+  if (trimmed.startsWith('@')) return fs.readFileSync(trimmed.slice(1), 'utf8');
+
+  const candidates = [
+    trimmed,
+    trimmed.replaceAll('\\"', '"'),
+    trimmed.replace(/^\^|\^$/g, '').replaceAll('\\^', '"').replaceAll('^', '"'),
+    trimmed
+      .replaceAll('\\{', '{')
+      .replaceAll('\\}', '}')
+      .replaceAll('\\^', '"')
+      .replace(/^\^|\^$/g, ''),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      return JSON.parse(candidate);
+    } catch {
+      // Try next normalization.
+    }
+  }
+
+  throw new Error(`Second argument must be JSON or @file.json. Received: ${value}`);
 }
+
+const args = normalizeJsonArgument(rawArgs);
 
 const requiredEnv = [
   'WINDMILL_BASE_URL',

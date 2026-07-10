@@ -4,6 +4,13 @@ function first(...values: unknown[]) {
   return values.find((value) => value !== undefined && value !== null && value !== '') ?? null;
 }
 
+function parseAmount(value: unknown): number | null {
+  if (value === undefined || value === null || value === '') return null;
+  const normalized = typeof value === 'string' ? value.replace(',', '.').trim() : value;
+  const amount = Number(normalized);
+  return Number.isFinite(amount) ? amount : null;
+}
+
 export function normalizePaymentStatus(value: unknown): PaymentStatus {
   const v = String(value ?? '').toLowerCase();
   if (['paid', 'pago', 'success', 'successful', 'confirmed'].includes(v)) return 'paid';
@@ -30,17 +37,32 @@ export function normalizeLusopayPayment(raw: any, options: NormalizePaymentOptio
   const custom = raw?.customValues || raw?.custom_values || {};
   const statusRaw = first(custom.PS, custom.payment_status, custom.status, raw?.status);
   const methodRaw = first(custom.CPM, custom.PYM, custom.chosen_payment_method, custom.payment_method, raw?.paymentMethod);
-  const amountRaw = first(custom.AMT, custom.amount, custom.paid_amount, raw?.amount);
+  const amountRaw = first(
+    custom.AMT,
+    custom.AMOUNT,
+    custom.amount,
+    custom.VAL,
+    custom.VALUE,
+    custom.valor,
+    custom.montante,
+    custom.paid_amount,
+    raw?.amount,
+    raw?.value,
+    raw?.totalAmount,
+  );
   const created = first(raw?.creationDate, raw?.createdAt, custom.created_at, custom.CD, custom.creation_date);
   const paid = first(custom.paid_at, custom.payment_date, custom.PD, raw?.paymentDate);
   const paymentStatus = normalizePaymentStatus(statusRaw);
 
   return {
+    payment_id: first(raw?.id, custom.payment_id, custom.PID) as string | null,
     order_id: first(custom.OID, custom.order_id, raw?.orderId) as string | null,
     payment_status: paymentStatus,
-    amount: Number.isFinite(Number(amountRaw)) ? Number(amountRaw) : null,
+    amount: parseAmount(amountRaw),
     currency: (first(custom.CUR, custom.currency, raw?.currency) as string | null) || 'EUR',
     payment_method: normalizePaymentMethod(methodRaw),
+    payment_link: first(custom.URL, custom.payment_link, raw?.paymentLink, raw?.url) as string | null,
+    link_status: first(custom.URL_S, custom.link_status, raw?.linkStatus) as string | null,
     created_at: created as string | null,
     paid_at: paymentStatus === 'paid' ? ((paid || created) as string | null) : null,
     raw_source: 'lusopay',

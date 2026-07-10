@@ -16,11 +16,14 @@ export interface MerchantContext {
 }
 
 export interface NormalizedPayment {
+  payment_id: string | null;
   order_id: string | null;
   payment_status: PaymentStatus;
   amount: number | null;
   currency: string;
   payment_method: string | null;
+  payment_link?: string | null;
+  link_status?: string | null;
   created_at: string | null;
   paid_at: string | null;
   raw_source: 'lusopay';
@@ -61,4 +64,3 @@ export interface PaymentFilters {
   payment_method?: string;
   order_id?: string;
 }
-

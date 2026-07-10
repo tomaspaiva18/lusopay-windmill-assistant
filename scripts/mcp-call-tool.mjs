@@ -9,6 +9,13 @@ function normalizeJsonArgument(value) {
   const trimmed = value.trim();
   if (trimmed.startsWith('@')) return fs.readFileSync(trimmed.slice(1), 'utf8');
 
+  const quoteLooseObject = (input) => input
+    .replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)/g, '$1"$2"$3')
+    .replace(/:\s*([A-Za-z_][A-Za-z0-9_/-]*)(\s*[,}])/g, (_match, bareValue, suffix) => {
+      if (['true', 'false', 'null'].includes(bareValue)) return `:${bareValue}${suffix}`;
+      return `:"${bareValue}"${suffix}`;
+    });
+
   const candidates = [
     trimmed,
     trimmed.replaceAll('\\"', '"'),
@@ -18,6 +25,7 @@ function normalizeJsonArgument(value) {
       .replaceAll('\\}', '}')
       .replaceAll('\\^', '"')
       .replace(/^\^|\^$/g, ''),
+    quoteLooseObject(trimmed),
   ];
 
   for (const candidate of candidates) {

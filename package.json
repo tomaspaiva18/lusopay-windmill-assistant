@@ -7,6 +7,7 @@
     "validate": "node scripts/validate-project.mjs",
     "mcp:smoke": "npm run mcp:build && node scripts/mcp-smoke-test.mjs",
     "mcp:build": "tsc -p mcp-server/tsconfig.json",
+    "mcp:test:tool": "npm run mcp:build && node scripts/mcp-call-tool.mjs",
     "mcp:start": "node mcp-server/dist/index.js"
   },
   "devDependencies": {

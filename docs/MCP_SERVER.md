@@ -1,6 +1,6 @@
 # LusoPay MCP Server
 
-Este servidor MCP expõe ferramentas para agentes IA chamarem os scripts Windmill da LusoPay sem expor credenciais LusoPay ao agente.
+Este servidor MCP expõe ferramentas para agentes IA fazerem queries à API da LusoPay através dos scripts Windmill, sem expor credenciais LusoPay ao agente.
 
 ## Arquitetura
 
@@ -11,10 +11,16 @@ mcp-server
         ↓
 Windmill API
         ↓
-Scripts f/lusopay, f/customers, f/reconciliation
+Scripts f/lusopay
         ↓
 API LusoPay
 ```
+
+## Orientação atual
+
+A V1 pública está focada apenas em queries reais à API da LusoPay.
+
+As tools de loja, clientes e reconciliação baseadas em mock foram removidas do MCP público. Esses adapters podem continuar como estrutura interna/futura, mas não devem ser expostos ao agente enquanto não houver integração real.
 
 ## Autenticação
 
@@ -44,7 +50,7 @@ Para modo `static` multi-merchant:
   "merchant-token-demo": {
     "merchant_id": "DEMO_STORE",
     "merchant_name": "Loja Demo",
-    "permissions": ["payments:read", "customers:read", "reconciliation:read"]
+    "permissions": ["payments:read"]
   }
 }
 ```
@@ -70,22 +76,18 @@ O endpoint deve responder algo neste formato:
   "active": true,
   "merchant_id": "cliente_123",
   "merchant_name": "Loja Cliente",
-  "permissions": ["payments:read", "customers:read"]
+  "permissions": ["payments:read"]
 }
 ```
 
-## Tools expostas
+## Tools expostas na V1 LusoPay API only
 
 - `listar_pagamentos`
 - `obter_pagamento_por_order_id`
+- `consultar_pagamento`
 - `listar_pagamentos_pendentes`
+- `pagamentos_confirmados`
 - `resumo_pagamentos`
-- `comparar_pagamentos_loja_lusopay`
-- `obter_cliente`
-- `resumo_cliente`
-- `listar_encomendas_cliente`
-- `clientes_mais_ativos`
-- `clientes_com_pagamentos_pendentes`
 
 ## Build
 
@@ -101,31 +103,24 @@ $env:WINDMILL_WORKSPACE="lusopay-mcp-server"
 $env:WINDMILL_TOKEN="<token>"
 $env:LUSOPAY_MCP_AUTH_MODE="static"
 $env:LUSOPAY_MCP_ACCESS_TOKEN="merchant-token-demo"
-$env:LUSOPAY_MCP_MERCHANTS_JSON='{"merchant-token-demo":{"merchant_id":"DEMO_STORE","permissions":["payments:read","customers:read","reconciliation:read"]}}'
+$env:LUSOPAY_MCP_MERCHANTS_JSON='{"merchant-token-demo":{"merchant_id":"DEMO_STORE","permissions":["payments:read"]}}'
 npm run mcp:start
-```
-
-## Exemplo de configuração para cliente MCP local
-
-```json
-{
-  "mcpServers": {
-    "lusopay": {
-      "command": "node",
-      "args": ["C:\\Users\\Tomás\\Desktop\\lusopay-mcp\\mcp-server\\dist\\index.js"],
-      "env": {
-        "WINDMILL_BASE_URL": "https://app.windmill.dev",
-        "WINDMILL_WORKSPACE": "lusopay-mcp-server",
-        "WINDMILL_TOKEN": "<token Windmill>",
-        "LUSOPAY_MCP_AUTH_MODE": "static",
-        "LUSOPAY_MCP_ACCESS_TOKEN": "merchant-token-demo",
-        "LUSOPAY_MCP_MERCHANTS_JSON": "{\"merchant-token-demo\":{\"merchant_id\":\"DEMO_STORE\",\"permissions\":[\"payments:read\",\"customers:read\",\"reconciliation:read\"]}}"
-      }
-    }
-  }
-}
 ```
 
 ## Nota de produto
 
-Na versão de produto, o cliente final não deve receber `WINDMILL_TOKEN`. Esse token deve ficar num backend controlado pela LusoPay. Para distribuição desktop/local, usar tokens de merchant com escopo limitado e preferir um gateway HTTP gerido pela LusoPay.
+Na versão de produto, o cliente final não deve receber `WINDMILL_TOKEN`. Esse token deve ficar num backend controlado pela LusoPay.
+
+O modelo recomendado é:
+
+```text
+Cliente MCP
+  ↓
+Gateway/Backend LusoPay autenticado
+  ↓
+Windmill
+  ↓
+API LusoPay
+```
+
+O modo `static` serve para desenvolvimento e demo. O modo final deve ser `introspection`, em que o MCP valida o token do cliente num endpoint controlado pela LusoPay.

@@ -4,7 +4,7 @@
 
 No Windmill, cria um API token para o backend MCP.
 
-Não coloques esse token no Git.
+Não coloques esse token no Git nem no chat.
 
 ## 2. Configurar ambiente local em PowerShell
 
@@ -14,17 +14,26 @@ $env:WINDMILL_WORKSPACE="lusopay-mcp-server"
 $env:WINDMILL_TOKEN="<token Windmill>"
 $env:LUSOPAY_MCP_AUTH_MODE="static"
 $env:LUSOPAY_MCP_ACCESS_TOKEN="merchant-token-demo"
-$env:LUSOPAY_MCP_MERCHANTS_JSON='{"merchant-token-demo":{"merchant_id":"DEMO_STORE","merchant_name":"Loja Demo","permissions":["payments:read","customers:read","reconciliation:read"]}}'
+$env:LUSOPAY_MCP_MERCHANTS_JSON='{"merchant-token-demo":{"merchant_id":"DEMO_STORE","merchant_name":"Loja Demo","permissions":["payments:read"]}}'
 ```
 
 ## 3. Build e teste local
 
 ```powershell
 npm run mcp:build
-npm run mcp:test:tool -- listar_pagamentos '{\"status\":\"paid\",\"include_raw\":false}'
+npm run mcp:test:tool -- listar_pagamentos "{status:paid,include_raw:false}"
 ```
 
-Se funcionar, o resultado deve vir como `content[0].text` com JSON de pagamentos.
+Se funcionar, o resultado vem como `content[0].text` com JSON de pagamentos.
+
+## Tools disponíveis nesta fase
+
+- `listar_pagamentos`
+- `obter_pagamento_por_order_id`
+- `consultar_pagamento`
+- `listar_pagamentos_pendentes`
+- `pagamentos_confirmados`
+- `resumo_pagamentos`
 
 ## 4. Configuração genérica para clientes MCP
 
@@ -40,7 +49,7 @@ Se funcionar, o resultado deve vir como `content[0].text` com JSON de pagamentos
         "WINDMILL_TOKEN": "<token Windmill>",
         "LUSOPAY_MCP_AUTH_MODE": "static",
         "LUSOPAY_MCP_ACCESS_TOKEN": "merchant-token-demo",
-        "LUSOPAY_MCP_MERCHANTS_JSON": "{\"merchant-token-demo\":{\"merchant_id\":\"DEMO_STORE\",\"merchant_name\":\"Loja Demo\",\"permissions\":[\"payments:read\",\"customers:read\",\"reconciliation:read\"]}}"
+        "LUSOPAY_MCP_MERCHANTS_JSON": "{\"merchant-token-demo\":{\"merchant_id\":\"DEMO_STORE\",\"merchant_name\":\"Loja Demo\",\"permissions\":[\"payments:read\"]}}"
       }
     }
   }

@@ -82,6 +82,18 @@ export function registerTools(server: McpServer, runtime: ToolRuntime): void {
   });
 
   registerWindmillTool(server, runtime, {
+    name: 'consultar_pagamento',
+    title: 'Consultar pagamento',
+    description: 'Consulta um pagamento da LusoPay pelo order_id. Alias orientado a linguagem natural.',
+    permission: 'payments:read',
+    inputSchema: {
+      order_id: z.string().min(1).describe('Identificador da encomenda/order_id.'),
+      include_raw: includeRaw,
+    },
+    handler: (args) => runtime.windmill.run('f/lusopay/obter_pagamento_por_order_id', runtime.session, args),
+  });
+
+  registerWindmillTool(server, runtime, {
     name: 'listar_pagamentos_pendentes',
     title: 'Listar pagamentos pendentes',
     description: 'Lista apenas pagamentos pendentes na LusoPay.',
@@ -95,6 +107,24 @@ export function registerTools(server: McpServer, runtime: ToolRuntime): void {
   });
 
   registerWindmillTool(server, runtime, {
+    name: 'pagamentos_confirmados',
+    title: 'Pagamentos confirmados',
+    description: 'Lista pagamentos confirmados/pagos na LusoPay.',
+    permission: 'payments:read',
+    inputSchema: {
+      start_date: optionalDate,
+      end_date: optionalDate,
+      payment_method: z.string().optional(),
+      order_id: z.string().optional(),
+      include_raw: includeRaw,
+    },
+    handler: (args) => runtime.windmill.run('f/lusopay/listar_pagamentos', runtime.session, {
+      ...args,
+      status: 'paid',
+    }),
+  });
+
+  registerWindmillTool(server, runtime, {
     name: 'resumo_pagamentos',
     title: 'Resumo de pagamentos',
     description: 'Gera resumo de pagamentos por período, estado e método.',
@@ -105,81 +135,5 @@ export function registerTools(server: McpServer, runtime: ToolRuntime): void {
       include_raw: includeRaw,
     },
     handler: (args) => runtime.windmill.run('f/lusopay/resumo_pagamentos', runtime.session, args),
-  });
-
-  registerWindmillTool(server, runtime, {
-    name: 'comparar_pagamentos_loja_lusopay',
-    title: 'Comparar loja com LusoPay',
-    description: 'Compara pagamentos da loja com pagamentos LusoPay e devolve divergências em JSON.',
-    permission: 'reconciliation:read',
-    inputSchema: {
-      start_date: requiredDate,
-      end_date: requiredDate,
-      include_raw: includeRaw,
-    },
-    handler: (args) => runtime.windmill.run('f/reconciliation/comparar_pagamentos_loja_lusopay', runtime.session, args),
-  });
-
-  registerWindmillTool(server, runtime, {
-    name: 'obter_cliente',
-    title: 'Obter cliente',
-    description: 'Obtém dados de cliente na interface de loja. Na V1 usa mock/store adapter.',
-    permission: 'customers:read',
-    inputSchema: {
-      customer_identifier: z.string().min(1).describe('ID, email ou identificador do cliente.'),
-    },
-    handler: (args) => runtime.windmill.run('f/customers/obter_cliente', runtime.session, args),
-  });
-
-  registerWindmillTool(server, runtime, {
-    name: 'resumo_cliente',
-    title: 'Resumo de cliente',
-    description: 'Gera resumo de atividade de um cliente.',
-    permission: 'customers:read',
-    inputSchema: {
-      customer_identifier: z.string().min(1).describe('ID, email ou identificador do cliente.'),
-      period_days: z.number().int().positive().max(365).optional().default(30),
-    },
-    handler: (args) => runtime.windmill.run('f/customers/resumo_cliente', runtime.session, args),
-  });
-
-  registerWindmillTool(server, runtime, {
-    name: 'listar_encomendas_cliente',
-    title: 'Listar encomendas de cliente',
-    description: 'Lista encomendas de um cliente na loja.',
-    permission: 'customers:read',
-    inputSchema: {
-      customer_identifier: z.string().min(1).describe('ID, email ou identificador do cliente.'),
-      start_date: optionalDate,
-      end_date: optionalDate,
-      limit: z.number().int().positive().max(200).optional().default(50),
-    },
-    handler: (args) => runtime.windmill.run('f/customers/listar_encomendas_cliente', runtime.session, args),
-  });
-
-  registerWindmillTool(server, runtime, {
-    name: 'clientes_mais_ativos',
-    title: 'Clientes mais ativos',
-    description: 'Lista clientes mais ativos por número de encomendas ou total gasto.',
-    permission: 'customers:read',
-    inputSchema: {
-      start_date: requiredDate,
-      end_date: requiredDate,
-      sort_by: z.enum(['orders_count', 'total_spent']).optional().default('total_spent'),
-      limit: z.number().int().positive().max(100).optional().default(10),
-    },
-    handler: (args) => runtime.windmill.run('f/customers/clientes_mais_ativos', runtime.session, args),
-  });
-
-  registerWindmillTool(server, runtime, {
-    name: 'clientes_com_pagamentos_pendentes',
-    title: 'Clientes com pagamentos pendentes',
-    description: 'Lista clientes com encomendas/pagamentos pendentes.',
-    permission: 'customers:read',
-    inputSchema: {
-      older_than_days: z.number().int().positive().max(365).optional(),
-      limit: z.number().int().positive().max(100).optional().default(20),
-    },
-    handler: (args) => runtime.windmill.run('f/customers/clientes_com_pagamentos_pendentes', runtime.session, args),
   });
 }

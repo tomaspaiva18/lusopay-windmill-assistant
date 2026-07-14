@@ -30,14 +30,10 @@ await client.close();
 const expectedTools = [
   'listar_pagamentos',
   'obter_pagamento_por_order_id',
+  'consultar_pagamento',
   'listar_pagamentos_pendentes',
+  'pagamentos_confirmados',
   'resumo_pagamentos',
-  'comparar_pagamentos_loja_lusopay',
-  'obter_cliente',
-  'resumo_cliente',
-  'listar_encomendas_cliente',
-  'clientes_mais_ativos',
-  'clientes_com_pagamentos_pendentes',
 ];
 
 const toolNames = new Set(tools.map((tool) => tool.name));
@@ -45,4 +41,8 @@ for (const toolName of expectedTools) {
   if (!toolNames.has(toolName)) throw new Error(`Missing MCP tool: ${toolName}`);
 }
 
-console.log(`MCP smoke test ok: ${tools.length} tools exposed`);
+for (const toolName of toolNames) {
+  if (!expectedTools.includes(toolName)) throw new Error(`Unexpected MCP tool exposed: ${toolName}`);
+}
+
+console.log(`MCP smoke test ok: ${tools.length} LusoPay API tools exposed`);

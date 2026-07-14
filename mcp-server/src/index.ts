@@ -16,7 +16,7 @@ async function main() {
     version: '1.0.0',
   });
 
-  registerTools(server, { windmill, session });
+  registerTools(server, { config, windmill, session });
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

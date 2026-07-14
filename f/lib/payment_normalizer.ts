@@ -52,6 +52,7 @@ export function normalizeLusopayPayment(raw: any, options: NormalizePaymentOptio
   );
   const created = first(raw?.creationDate, raw?.createdAt, custom.created_at, custom.CD, custom.creation_date);
   const paid = first(custom.paid_at, custom.payment_date, custom.PD, raw?.paymentDate);
+  const expires = first(custom.ED, custom.expires_at, custom.expiration_date, custom.expiry_date, raw?.expirationDate);
   const paymentStatus = normalizePaymentStatus(statusRaw);
 
   return {
@@ -63,6 +64,7 @@ export function normalizeLusopayPayment(raw: any, options: NormalizePaymentOptio
     payment_method: normalizePaymentMethod(methodRaw),
     payment_link: first(custom.URL, custom.payment_link, raw?.paymentLink, raw?.url) as string | null,
     link_status: first(custom.URL_S, custom.link_status, raw?.linkStatus) as string | null,
+    expires_at: expires as string | null,
     created_at: created as string | null,
     paid_at: paymentStatus === 'paid' ? ((paid || created) as string | null) : null,
     raw_source: 'lusopay',

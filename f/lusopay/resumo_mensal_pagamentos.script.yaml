@@ -1,0 +1,24 @@
+summary: ''
+description: ''
+lock: ''
+kind: script
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    include_raw:
+      type: boolean
+      description: ''
+      default: false
+    merchant_id:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    month:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+  required:
+    - month

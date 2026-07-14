@@ -24,6 +24,7 @@ export interface NormalizedPayment {
   payment_method: string | null;
   payment_link?: string | null;
   link_status?: string | null;
+  expires_at?: string | null;
   created_at: string | null;
   paid_at: string | null;
   raw_source: 'lusopay';

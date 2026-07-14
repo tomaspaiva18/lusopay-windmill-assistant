@@ -1,6 +1,12 @@
 # LusoPay MCP Server
 
-Este servidor MCP expõe ferramentas para agentes IA fazerem queries à API da LusoPay através dos scripts Windmill, sem expor credenciais LusoPay ao agente.
+Este servidor MCP expõe ferramentas para agentes IA fazerem queries à API da LusoPay através do Windmill, sem expor credenciais LusoPay ao agente.
+
+## Scope da V1
+
+A V1 ativa está focada apenas na camada do dono da loja / backoffice.
+
+A camada do cliente final/catálogo foi retirada do MCP ativo nesta fase para manter o produto mais simples, seguro e alinhado com a integração real da API LusoPay.
 
 ## Arquitetura
 
@@ -16,11 +22,29 @@ Scripts f/lusopay
 API LusoPay
 ```
 
-## Orientação atual
+## Tools expostas
 
-A V1 pública está focada apenas em queries reais à API da LusoPay.
+Requerem `payments:read`.
 
-As tools de loja, clientes e reconciliação baseadas em mock foram removidas do MCP público. Esses adapters podem continuar como estrutura interna/futura, mas não devem ser expostos ao agente enquanto não houver integração real.
+- `listar_pagamentos`
+- `obter_pagamento_por_order_id`
+- `consultar_pagamento`
+- `listar_pagamentos_pendentes`
+- `pagamentos_confirmados`
+- `listar_pagamentos_cancelados`
+- `listar_pagamentos_falhados`
+- `detetar_pagamentos_pendentes_antigos`
+- `detetar_links_expirados`
+- `resumo_pagamentos`
+- `resumo_mensal_pagamentos`
+
+Requer `payments:write`.
+
+- `criar_link_pagamento`
+
+`criar_link_pagamento` usa as mesmas regras das extensões Moodle/OpenCart: `offline_engine.php` com campo `data` em base64 contendo os campos LusoPay (`T`, `PID`, `CUR`, `OID`, `AMT`, `MSG`, `PN`, `PE`, `PYM`, `UF`, `W`, etc.).
+
+Por segurança, `dry_run` é `true` por defeito. Com `dry_run:true`, a tool só prepara o payload/formulário e não executa o POST de criação.
 
 ## Autenticação
 
@@ -39,7 +63,7 @@ WINDMILL_BASE_URL=https://app.windmill.dev
 WINDMILL_WORKSPACE=lusopay-mcp-server
 WINDMILL_TOKEN=<token Windmill com permissão para correr scripts>
 LUSOPAY_MCP_AUTH_MODE=static
-LUSOPAY_MCP_ACCESS_TOKEN=<token entregue ao cliente/merchant>
+LUSOPAY_MCP_ACCESS_TOKEN=<token entregue ao merchant>
 MERCHANT_ID=DEMO_STORE
 ```
 
@@ -76,18 +100,9 @@ O endpoint deve responder algo neste formato:
   "active": true,
   "merchant_id": "cliente_123",
   "merchant_name": "Loja Cliente",
-  "permissions": ["payments:read"]
+  "permissions": ["payments:read", "payments:write"]
 }
 ```
-
-## Tools expostas na V1 LusoPay API only
-
-- `listar_pagamentos`
-- `obter_pagamento_por_order_id`
-- `consultar_pagamento`
-- `listar_pagamentos_pendentes`
-- `pagamentos_confirmados`
-- `resumo_pagamentos`
 
 ## Build
 
@@ -124,3 +139,9 @@ API LusoPay
 ```
 
 O modo `static` serve para desenvolvimento e demo. O modo final deve ser `introspection`, em que o MCP valida o token do cliente num endpoint controlado pela LusoPay.
+
+## Nota sobre criação de links
+
+`criar_link_pagamento` é uma operação financeira. Em produção, só deve ser exposto a tokens com `payments:write`.
+
+A camada cliente final/catálogo pode voltar mais tarde como módulo separado, depois de a camada de pagamentos/backoffice estar sólida.

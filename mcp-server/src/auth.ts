@@ -1,7 +1,7 @@
 import type { McpServerConfig } from './config.js';
-
 export type Permission =
   | 'payments:read'
+  | 'payments:write'
   | 'customers:read'
   | 'reconciliation:read';
 
@@ -106,4 +106,8 @@ export function requirePermission(session: MerchantSession, permission: Permissi
   if (!session.permissions.includes(permission)) {
     throw new Error(`Merchant is missing required permission: ${permission}`);
   }
+}
+
+export function hasPermission(session: MerchantSession, permission: Permission): boolean {
+  return session.permissions.includes(permission);
 }

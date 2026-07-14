@@ -7,7 +7,7 @@ const rawArgs = rawArgParts.length > 0 ? rawArgParts.join(' ') : '{"status":"pai
 
 function normalizeJsonArgument(value) {
   const trimmed = value.trim();
-  if (trimmed.startsWith('@')) return fs.readFileSync(trimmed.slice(1), 'utf8');
+  if (trimmed.startsWith('@')) return JSON.parse(fs.readFileSync(trimmed.slice(1), 'utf8'));
 
   const quoteLooseObject = (input) => input
     .replace(/([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*:)/g, '$1"$2"$3')
@@ -15,6 +15,31 @@ function normalizeJsonArgument(value) {
       if (['true', 'false', 'null'].includes(bareValue)) return `:${bareValue}${suffix}`;
       return `:"${bareValue}"${suffix}`;
     });
+
+  const parseLooseObject = (input) => {
+    const normalized = input.replace(/^\^|\^$/g, '').trim();
+    if (!normalized.startsWith('{') || !normalized.endsWith('}')) return undefined;
+
+    const body = normalized.slice(1, -1).trim();
+    if (!body) return {};
+
+    const result = {};
+    for (const pair of body.split(',')) {
+      const separatorIndex = pair.indexOf(':');
+      if (separatorIndex === -1) return undefined;
+
+      const key = pair.slice(0, separatorIndex).trim().replace(/^["']|["']$/g, '');
+      const rawValue = pair.slice(separatorIndex + 1).trim().replace(/^["']|["']$/g, '').replaceAll('^', '');
+      if (!key) return undefined;
+
+      if (rawValue === 'true') result[key] = true;
+      else if (rawValue === 'false') result[key] = false;
+      else if (rawValue === 'null') result[key] = null;
+      else if (/^-?\d+(\.\d+)?$/.test(rawValue)) result[key] = Number(rawValue);
+      else result[key] = rawValue;
+    }
+    return result;
+  };
 
   const candidates = [
     trimmed,
@@ -35,6 +60,9 @@ function normalizeJsonArgument(value) {
       // Try next normalization.
     }
   }
+
+  const loose = parseLooseObject(trimmed);
+  if (loose !== undefined) return loose;
 
   throw new Error(`Second argument must be JSON or @file.json. Received: ${value}`);
 }

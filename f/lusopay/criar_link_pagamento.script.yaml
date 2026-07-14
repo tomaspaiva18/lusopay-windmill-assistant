@@ -1,0 +1,82 @@
+summary: ''
+description: ''
+lock: ''
+kind: script
+schema:
+  $schema: https://json-schema.org/draft/2020-12/schema
+  type: object
+  properties:
+    description:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    amount:
+      type: number
+      description: ''
+      default: null
+    country:
+      type: string
+      description: ''
+      default: PT
+      originalType: string
+    currency:
+      type: string
+      description: ''
+      default: EUR
+      originalType: string
+    customer_email:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    customer_name:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    dry_run:
+      type: boolean
+      description: ''
+      default: true
+    language:
+      type: string
+      description: ''
+      default: pt_PT
+      originalType: string
+    merchant_id:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    order_id:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    payment_methods:
+      type: array
+      description: ''
+      default:
+        - P0
+      items:
+        type: string
+      originalType: string[]
+    return_url:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    website_url:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+  required:
+    - amount
+    - description
+    - order_id
+    - customer_name
+    - customer_email
+    - return_url
+    - website_url

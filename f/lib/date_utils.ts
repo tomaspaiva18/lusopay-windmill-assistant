@@ -1,5 +1,8 @@
 import { ValidationError } from './errors.ts';
 
+// Utilitários de datas usados para filtrar e limitar consultas.
+// A regra de 90 dias evita consultas demasiado pesadas à API.
+
 const defaultMaxRangeDays = 90;
 
 export function assertIsoDate(value: string | undefined, field: string): void {
@@ -9,6 +12,7 @@ export function assertIsoDate(value: string | undefined, field: string): void {
 }
 
 export function validateDateRange(startDate?: string, endDate?: string): void {
+  // Valida formato, ordem cronológica e tamanho máximo do intervalo.
   assertIsoDate(startDate, 'start_date');
   assertIsoDate(endDate, 'end_date');
   if (startDate && endDate && startDate > endDate) {

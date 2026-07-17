@@ -5,6 +5,8 @@ export class ValidationError extends Error {
   }
 }
 
+// Erros tipados ajudam o MCP/Windmill a distinguir validação, API LusoPay e loja.
+
 export class LusopayApiError extends Error {
   constructor(
     message: string,
@@ -23,6 +25,7 @@ export class StoreDataError extends Error {
 }
 
 export function sanitizeError(error: unknown) {
+  // Normaliza erros antes de os devolver a clientes MCP.
   if (error instanceof Error) {
     return {
       name: error.name,
@@ -46,6 +49,7 @@ const sensitiveKeys = new Set([
 ]);
 
 export function redactSensitiveData<T>(value: T): T {
+  // Redige recursivamente dados sensíveis em logs, respostas de erro e auditoria.
   if (Array.isArray(value)) {
     return value.map((item) => redactSensitiveData(item)) as T;
   }

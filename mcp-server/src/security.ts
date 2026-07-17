@@ -10,6 +10,7 @@ const SENSITIVE_KEYS = [
 ];
 
 export function redactSensitiveData<T>(value: T): T {
+  // Tudo o que sai para clientes MCP passa por esta função para não expor tokens/passwords.
   if (Array.isArray(value)) return value.map((item) => redactSensitiveData(item)) as T;
   if (!value || typeof value !== 'object') {
     if (typeof value === 'string') {
@@ -32,6 +33,7 @@ export function redactSensitiveData<T>(value: T): T {
 }
 
 export function jsonText(data: unknown): { content: Array<{ type: 'text'; text: string }> } {
+  // O protocolo MCP devolve conteúdo textual; usamos JSON formatado para facilitar leitura.
   return {
     content: [
       {
@@ -43,6 +45,7 @@ export function jsonText(data: unknown): { content: Array<{ type: 'text'; text: 
 }
 
 export function errorText(message: string): { isError: true; content: Array<{ type: 'text'; text: string }> } {
+  // Erros MCP ficam marcados com isError para o cliente/agente perceber que a tool falhou.
   return {
     isError: true,
     content: [

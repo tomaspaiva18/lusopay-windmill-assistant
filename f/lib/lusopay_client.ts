@@ -2,6 +2,9 @@ import type { MerchantContext } from './types.ts';
 import { validateDateRange } from './date_utils.ts';
 import { LusopayApiError, ValidationError, redactSensitiveData } from './errors.ts';
 
+// Cliente técnico para a API da LusoPay.
+// Centraliza chamadas HTTP, construção de payloads e parsing de respostas.
+
 export type FetchTransactionsParams = {
   start_date?: string;
   end_date?: string;
@@ -23,18 +26,21 @@ export type CreatePayByLinkParams = {
 };
 
 export function getLusopayBaseUrl(context: MerchantContext): string {
+  // A API de consulta usa endpoints diferentes para teste e produção.
   return context.lusopay.environment === 'prod'
     ? 'https://app.lusopay.com:8443/web/api'
     : 'https://dev.lusopay.com:8444/web_dev/api';
 }
 
 export function getPayByLinkOfflineEngineUrl(context: MerchantContext): string {
+  // A criação Pay by Link usa o offline_engine.php, tal como nas extensões Moodle/OpenCart.
   return context.lusopay.environment === 'prod'
     ? 'https://pay.lusopay.com/offline_engine.php'
     : 'https://pay.lusopay.com/paybylink_test/v3/offline_engine.php';
 }
 
 function encodeBase64(value: string): string {
+  // Compatível com Node/Bun e runtimes Web-like usados pelo Windmill.
   const buffer = (globalThis as unknown as {
     Buffer?: { from: (value: string, encoding?: string) => { toString: (encoding: string) => string } };
   }).Buffer;
@@ -61,6 +67,7 @@ function assertRequiredString(value: string | undefined, field: string) {
 }
 
 function normalizePaymentMethods(methods?: string[]) {
+  // P0 significa “todos os métodos”; P1..P13 são códigos específicos suportados pela LusoPay.
   const normalized = (methods?.length ? methods : ['P0']).map((method) => method.trim().toUpperCase());
   for (const method of normalized) {
     if (!/^P(?:0|[1-9]|1[0-3])$/.test(method)) {
@@ -71,6 +78,7 @@ function normalizePaymentMethods(methods?: string[]) {
 }
 
 export async function fetchTransactions(context: MerchantContext, params: FetchTransactionsParams = {}): Promise<unknown[]> {
+  // Limita e valida intervalos antes de chamar a API externa.
   validateDateRange(params.start_date, params.end_date);
 
   const query = new URLSearchParams();
@@ -96,6 +104,7 @@ export async function fetchTransactions(context: MerchantContext, params: FetchT
     throw new LusopayApiError('Endpoint ou PID LusoPay não encontrado', response.status);
   }
   if (!response.ok) {
+    // Redige dados sensíveis antes de incluir detalhes no erro.
     let detail = '';
     try {
       detail = JSON.stringify(redactSensitiveData(await response.clone().json()));
@@ -114,6 +123,7 @@ export async function fetchTransactions(context: MerchantContext, params: FetchT
 }
 
 export function buildPayByLinkPayload(context: MerchantContext, params: CreatePayByLinkParams) {
+  // Formato esperado: querystring dos campos LusoPay -> base64 -> POST como campo "data".
   const currency = (params.currency || 'EUR').toUpperCase();
   if (currency !== 'EUR') throw new ValidationError('currency deve ser EUR');
 
@@ -126,6 +136,7 @@ export function buildPayByLinkPayload(context: MerchantContext, params: CreatePa
   const websiteUrl = assertRequiredString(params.website_url, 'website_url');
 
   const fields: Record<string, string> = {
+    // T=API identifica a operação como criação via integração.
     T: 'API',
     PID: context.lusopay.pid,
     L: params.language || 'pt_PT',
@@ -160,6 +171,7 @@ export function buildPayByLinkPayload(context: MerchantContext, params: CreatePa
 }
 
 function extractPaymentLinkFromHtml(context: MerchantContext, html: string): string | null {
+  // O offline_engine.php pode devolver HTML em vez de redirect; extraímos o payment_form.php final.
   const cleanMatch = (value: string) => value.split(/&(?:quot|amp|lt|gt);|["'\s<>]/i)[0] || value;
 
   const absoluteMatch = html.match(/https:\/\/pay\.lusopay\.com\/(?:paybylink_test\/v3\/)?payment_form\.php\?data=[^"'\s<>]+/i);
@@ -179,6 +191,7 @@ function extractPaymentLinkFromHtml(context: MerchantContext, html: string): str
 export async function createPayByLink(context: MerchantContext, params: CreatePayByLinkParams) {
   const payload = buildPayByLinkPayload(context, params);
   if (params.dry_run !== false) {
+    // Seguro por defeito: sem dry_run:false não cria link real.
     return {
       dry_run: true,
       payment_id: null,
@@ -190,6 +203,7 @@ export async function createPayByLink(context: MerchantContext, params: CreatePa
   }
 
   const response = await fetch(payload.checkout_url, {
+    // Mantém redirects manuais para conseguirmos capturar o header Location.
     method: 'POST',
     redirect: 'manual',
     headers: {
@@ -205,13 +219,14 @@ export async function createPayByLink(context: MerchantContext, params: CreatePa
       dry_run: false,
       payment_id: null,
       payment_link: location,
-      estado: 'created',
+      estado: 'link_created',
       created_at: new Date().toISOString(),
       checkout_url: payload.checkout_url,
     };
   }
 
   if (response.ok) {
+    // Respostas 200 podem trazer o link final dentro do HTML.
     const body = await response.text().catch(() => '');
     const paymentLink = extractPaymentLinkFromHtml(context, body);
     if (!paymentLink) {
@@ -222,7 +237,7 @@ export async function createPayByLink(context: MerchantContext, params: CreatePa
       dry_run: false,
       payment_id: null,
       payment_link: paymentLink,
-      estado: 'created',
+      estado: 'link_created',
       created_at: new Date().toISOString(),
       checkout_url: payload.checkout_url,
     };

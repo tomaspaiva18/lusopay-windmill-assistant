@@ -1,5 +1,8 @@
 import type { NormalizedPayment, PaymentStatus } from './types.ts';
 
+// A API da LusoPay pode devolver campos em customValues e nomes variáveis.
+// Este módulo transforma essas respostas num contrato único usado pelo MCP.
+
 function first(...values: unknown[]) {
   return values.find((value) => value !== undefined && value !== null && value !== '') ?? null;
 }
@@ -12,15 +15,19 @@ function parseAmount(value: unknown): number | null {
 }
 
 export function normalizePaymentStatus(value: unknown): PaymentStatus {
+  // Estados internos explícitos evitam confundir “link criado” com “pagamento pago”.
   const v = String(value ?? '').toLowerCase();
-  if (['paid', 'pago', 'success', 'successful', 'confirmed'].includes(v)) return 'paid';
-  if (['pending', 'pendente', 'created', 'waiting'].includes(v)) return 'pending';
-  if (['cancelled', 'canceled', 'cancelado', 'canceled_by_user'].includes(v)) return 'cancelled';
-  if (['failed', 'declined', 'refused', 'error', 'falhado', 'recusado'].includes(v)) return 'failed';
+  if (['link_created', 'created_link', 'link created'].includes(v)) return 'link_created';
+  if (['paid', 'pago', 'success', 'successful', 'confirmed', 'payment_paid'].includes(v)) return 'payment_paid';
+  if (['pending', 'pendente', 'created', 'waiting', 'payment_pending'].includes(v)) return 'payment_pending';
+  if (['cancelled', 'canceled', 'cancelado', 'canceled_by_user', 'payment_cancelled'].includes(v)) return 'payment_cancelled';
+  if (['failed', 'declined', 'refused', 'error', 'falhado', 'recusado', 'payment_failed'].includes(v)) return 'payment_failed';
+  if (['expired', 'expirado', 'inactive', 'inativo'].includes(v)) return 'expired';
   return 'unknown';
 }
 
 export function normalizePaymentMethod(value: unknown): string | null {
+  // Unifica nomes comerciais e variantes textuais para facilitar filtros e relatórios.
   const original = value == null ? '' : String(value);
   const v = original.toLowerCase();
   if (v.includes('mbway') || v.includes('mb way')) return 'mbway';
@@ -34,6 +41,7 @@ export type NormalizePaymentOptions = {
 };
 
 export function normalizeLusopayPayment(raw: any, options: NormalizePaymentOptions = {}): NormalizedPayment {
+  // customValues é onde o Pay by Link costuma transportar OID, estado, moeda e URL.
   const custom = raw?.customValues || raw?.custom_values || {};
   const statusRaw = first(custom.PS, custom.payment_status, custom.status, raw?.status);
   const methodRaw = first(custom.CPM, custom.PYM, custom.chosen_payment_method, custom.payment_method, raw?.paymentMethod);
@@ -66,7 +74,7 @@ export function normalizeLusopayPayment(raw: any, options: NormalizePaymentOptio
     link_status: first(custom.URL_S, custom.link_status, raw?.linkStatus) as string | null,
     expires_at: expires as string | null,
     created_at: created as string | null,
-    paid_at: paymentStatus === 'paid' ? ((paid || created) as string | null) : null,
+    paid_at: paymentStatus === 'payment_paid' ? ((paid || created) as string | null) : null,
     raw_source: 'lusopay',
     ...(options.include_raw ? { raw } : {}),
   };
@@ -81,6 +89,7 @@ export function filterPayments(payments: NormalizedPayment[], filters: {
   payment_method?: string;
   order_id?: string;
 }) {
+  // Filtros simples em memória porque a API nem sempre expõe todos os filtros desejados.
   return payments
     .filter((payment) => !filters.status || payment.payment_status === normalizePaymentStatus(filters.status))
     .filter((payment) => !filters.payment_method || payment.payment_method === normalizePaymentMethod(filters.payment_method))
@@ -89,6 +98,7 @@ export function filterPayments(payments: NormalizedPayment[], filters: {
 }
 
 export function summarizePayments(payments: NormalizedPayment[]) {
+  // Resumo usado por ferramentas de reporting e por respostas mais legíveis para o dono da loja.
   const by_method: Record<string, number> = {};
   for (const payment of payments) {
     const method = payment.payment_method || 'unknown';
@@ -97,12 +107,12 @@ export function summarizePayments(payments: NormalizedPayment[]) {
   const count = (status: PaymentStatus) => payments.filter((payment) => payment.payment_status === status).length;
   return {
     total_received: payments
-      .filter((payment) => payment.payment_status === 'paid')
+      .filter((payment) => payment.payment_status === 'payment_paid')
       .reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
-    paid_count: count('paid'),
-    pending_count: count('pending'),
-    cancelled_count: count('cancelled'),
-    failed_count: count('failed'),
+    paid_count: count('payment_paid'),
+    pending_count: count('payment_pending'),
+    cancelled_count: count('payment_cancelled'),
+    failed_count: count('payment_failed'),
     by_method,
   };
 }

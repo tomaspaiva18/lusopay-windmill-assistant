@@ -8,7 +8,9 @@
     "mcp:smoke": "npm run mcp:build && node scripts/mcp-smoke-test.mjs",
     "mcp:build": "tsc -p mcp-server/tsconfig.json",
     "mcp:test:tool": "npm run mcp:build && node scripts/mcp-call-tool.mjs",
-    "mcp:start": "node mcp-server/dist/index.js"
+    "mcp:start": "node mcp-server/dist/index.js",
+    "chat:local": "npm run mcp:build && node local-chat/server.mjs",
+    "merchant:hash-token": "node scripts/hash-merchant-token.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",

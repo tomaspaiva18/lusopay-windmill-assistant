@@ -1,4 +1,15 @@
-export type PaymentStatus = 'paid' | 'pending' | 'cancelled' | 'failed' | 'unknown';
+export type PaymentStatus =
+  | 'link_created'
+  | 'payment_pending'
+  | 'payment_paid'
+  | 'payment_cancelled'
+  | 'payment_failed'
+  | 'expired'
+  | 'unknown'
+  | 'paid'
+  | 'pending'
+  | 'cancelled'
+  | 'failed';
 
 export interface MerchantContext {
   merchant_id: string;
@@ -13,6 +24,10 @@ export interface MerchantContext {
     platform: 'woocommerce' | 'shopify' | 'prestashop' | 'custom' | 'mock';
     credentials?: Record<string, unknown>;
   };
+}
+
+export interface MerchantRegistryRecord extends MerchantContext {
+  active?: boolean;
 }
 
 export interface NormalizedPayment {
@@ -64,4 +79,29 @@ export interface PaymentFilters {
   status?: string;
   payment_method?: string;
   order_id?: string;
+}
+
+export interface CreatedPaymentLinkRecord {
+  merchant_id: string;
+  order_id: string;
+  payment_id: string | null;
+  payment_link: string;
+  amount: number;
+  currency: string;
+  customer_email?: string;
+  customer_name?: string;
+  created_at: string;
+  expires_at?: string | null;
+  state: PaymentStatus;
+}
+
+export interface AuditLogEntry {
+  timestamp: string;
+  tool: string;
+  merchant_id: string;
+  order_id?: string | null;
+  duration_ms?: number;
+  result?: string;
+  error?: string;
+  inputs?: Record<string, unknown>;
 }

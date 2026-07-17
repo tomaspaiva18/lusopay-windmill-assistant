@@ -1,6 +1,14 @@
 import type { NormalizedPayment, ReconciliationIssue, StoreOrder } from './types.ts';
 import { normalizeStoreStatus } from './store_client.ts';
 
+function paymentStatusForStore(status: string) {
+  if (status === 'payment_paid') return 'paid';
+  if (status === 'payment_pending' || status === 'link_created') return 'pending';
+  if (status === 'payment_cancelled' || status === 'expired') return 'cancelled';
+  if (status === 'payment_failed') return 'failed';
+  return status;
+}
+
 export function reconcilePayments(storeOrders: StoreOrder[], lusopayPayments: NormalizedPayment[]) {
   const issues: ReconciliationIssue[] = [];
   const lusopayByOrder = new Map(lusopayPayments.filter((payment) => payment.order_id).map((payment) => [String(payment.order_id), payment]));
@@ -16,7 +24,8 @@ export function reconcilePayments(storeOrders: StoreOrder[], lusopayPayments: No
 
     matched += 1;
     const storeStatus = normalizeStoreStatus(order.store_status);
-    if (storeStatus !== payment.payment_status) {
+    const comparablePaymentStatus = paymentStatusForStore(payment.payment_status);
+    if (storeStatus !== comparablePaymentStatus) {
       issues.push({ order_id: orderId, issue: 'status_mismatch', store_status: storeStatus, lusopay_status: payment.payment_status, store_amount: order.amount, lusopay_amount: payment.amount });
     }
     if (payment.amount !== null && Number(order.amount) !== Number(payment.amount)) {
@@ -41,4 +50,3 @@ export function reconcilePayments(storeOrders: StoreOrder[], lusopayPayments: No
     issues,
   };
 }
-

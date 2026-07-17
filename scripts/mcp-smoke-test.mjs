@@ -1,5 +1,6 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { createHash } from 'node:crypto';
 
 async function listTools(envOverrides) {
   const transport = new StdioClientTransport({
@@ -28,6 +29,15 @@ async function listTools(envOverrides) {
   return tools.map((tool) => tool.name).sort();
 }
 
+async function assertServerFails(label, envOverrides) {
+  try {
+    await listTools(envOverrides);
+  } catch {
+    return;
+  }
+  throw new Error(`${label}: expected MCP server to reject credentials`);
+}
+
 function assertExact(label, actualTools, expectedTools) {
   const actual = new Set(actualTools);
   for (const toolName of expectedTools) {
@@ -40,6 +50,7 @@ function assertExact(label, actualTools, expectedTools) {
 }
 
 const readTools = [
+  'acompanhar_pagamento',
   'consultar_pagamento',
   'detetar_links_expirados',
   'detetar_pagamentos_pendentes_antigos',
@@ -82,4 +93,32 @@ const readWrite = await listTools({
 });
 assertExact('read-write', readWrite, writeTools);
 
-console.log(`MCP smoke test ok: read=${readOnly.length}, read_write=${readWrite.length}`);
+const hashedToken = 'hashed-token';
+const hashedReadOnly = await listTools({
+  LUSOPAY_MCP_AUTH_MODE: 'static',
+  LUSOPAY_MCP_ACCESS_TOKEN: hashedToken,
+  LUSOPAY_MCP_MERCHANTS_JSON: JSON.stringify([
+    {
+      token_hash: createHash('sha256').update(hashedToken).digest('hex'),
+      merchant_id: 'DEMO_STORE',
+      permissions: ['payments:read'],
+      expires_at: '2999-01-01T00:00:00Z',
+    },
+  ]),
+});
+assertExact('hashed-read-only', hashedReadOnly, readTools);
+
+await assertServerFails('expired-token', {
+  LUSOPAY_MCP_AUTH_MODE: 'static',
+  LUSOPAY_MCP_ACCESS_TOKEN: 'expired-token',
+  LUSOPAY_MCP_MERCHANTS_JSON: JSON.stringify([
+    {
+      token_hash: createHash('sha256').update('expired-token').digest('hex'),
+      merchant_id: 'DEMO_STORE',
+      permissions: ['payments:read'],
+      expires_at: '2000-01-01T00:00:00Z',
+    },
+  ]),
+});
+
+console.log(`MCP smoke test ok: read=${readOnly.length}, read_write=${readWrite.length}, hashed_read=${hashedReadOnly.length}`);

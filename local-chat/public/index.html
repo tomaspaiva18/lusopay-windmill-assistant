@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LusoPay MCP Chatbot Local</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: Inter, Segoe UI, system-ui, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: radial-gradient(circle at top, #1e293b, #020617);
+    }
+    main {
+      width: min(1100px, calc(100vw - 32px));
+      height: min(780px, calc(100vh - 32px));
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      border: 1px solid #334155;
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(15, 23, 42, 0.92);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+    }
+    header {
+      padding: 18px 22px;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: center;
+    }
+    h1 {
+      font-size: 18px;
+      margin: 0;
+    }
+    .status {
+      color: #93c5fd;
+      font-size: 13px;
+    }
+    #messages {
+      overflow: auto;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .message {
+      max-width: 78%;
+      padding: 13px 15px;
+      border-radius: 14px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+    .user {
+      align-self: flex-end;
+      background: #2563eb;
+      color: white;
+    }
+    .assistant {
+      align-self: flex-start;
+      background: #1f2937;
+      border: 1px solid #374151;
+    }
+    .tool {
+      align-self: flex-start;
+      max-width: 92%;
+      font-size: 12px;
+      color: #bfdbfe;
+      background: #0f172a;
+      border: 1px dashed #334155;
+    }
+    form {
+      padding: 16px;
+      border-top: 1px solid #334155;
+      display: flex;
+      gap: 10px;
+    }
+    input {
+      flex: 1;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 13px 14px;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 15px;
+    }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 0 18px;
+      background: #22c55e;
+      color: #052e16;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+    }
+    .examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 16px 16px;
+    }
+    .example {
+      border: 1px solid #334155;
+      background: #111827;
+      color: #cbd5e1;
+      border-radius: 999px;
+      padding: 8px 11px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>LusoPay MCP Chatbot Local</h1>
+        <div class="status">Demo local para dono da loja</div>
+      </div>
+      <div class="status" id="runtime">localhost</div>
+    </header>
+
+    <section id="messages">
+      <div class="message assistant">Olá. Podes perguntar-me sobre pagamentos, pendentes, resumos ou criação de Pay by Link.</div>
+    </section>
+
+    <div class="examples">
+      <button class="example" type="button">Lista os pagamentos pagos.</button>
+      <button class="example" type="button">Mostra o resumo de Julho de 2026.</button>
+      <button class="example" type="button">Acompanha a encomenda TESTE-UPGRADE-REGISTRY-001.</button>
+      <button class="example" type="button">Prepara um Pay by Link em dry run de 1 euro.</button>
+    </div>
+
+    <form id="chat-form">
+      <input id="message" autocomplete="off" placeholder="Escreve uma pergunta para a LusoPay..." />
+      <button id="send" type="submit">Enviar</button>
+    </form>
+  </main>
+
+  <script>
+    const messagesEl = document.querySelector('#messages');
+    const form = document.querySelector('#chat-form');
+    const input = document.querySelector('#message');
+    const send = document.querySelector('#send');
+    const history = [];
+
+    function addMessage(role, content, className = role) {
+      const div = document.createElement('div');
+      div.className = `message ${className}`;
+      div.textContent = content;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+      if (role === 'user' || role === 'assistant') {
+        history.push({ role, content });
+      }
+    }
+
+    async function ask(message) {
+      addMessage('user', message);
+      input.value = '';
+      send.disabled = true;
+      addMessage('assistant', 'A pensar...', 'assistant');
+      const pending = messagesEl.lastElementChild;
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, history: history.slice(0, -1) }),
+        });
+        const body = await response.json();
+        if (!response.ok || body.error) throw new Error(body.error || `HTTP ${response.status}`);
+        pending.textContent = body.answer || '(sem resposta)';
+        history.push({ role: 'assistant', content: pending.textContent });
+        for (const tool of body.toolLog || []) {
+          const status = tool.isError ? 'erro' : 'ok';
+          const preview = tool.result ? `\nResultado: ${tool.result.slice(0, 700)}` : '';
+          addMessage('tool', `Tool: ${tool.name} (${status})\nArgs: ${JSON.stringify(tool.arguments, null, 2)}${preview}`, 'tool');
+        }
+      } catch (error) {
+        pending.textContent = `Erro: ${error.message}`;
+      } finally {
+        send.disabled = false;
+        input.focus();
+      }
+    }
+
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const message = input.value.trim();
+      if (message) ask(message);
+    });
+
+    document.querySelectorAll('.example').forEach((button) => {
+      button.addEventListener('click', () => {
+        input.value = button.textContent;
+        input.focus();
+      });
+    });
+  </script>
+</body>
+</html>

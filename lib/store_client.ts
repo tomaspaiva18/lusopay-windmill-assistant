@@ -2,6 +2,9 @@ import type { MerchantContext, StoreCustomer, StoreOrder } from './types.ts';
 import { isWithinDateRange } from './date_utils.ts';
 import { StoreDataError } from './errors.ts';
 
+// Interface da loja.
+// Na V1 continua mockada, mas o contrato permite trocar por WooCommerce, Shopify, etc.
+
 const mockCustomers: StoreCustomer[] = [
   { id: 'c001', name: 'João Silva', email: 'joao@example.com' },
   { id: 'c002', name: 'Maria Costa', email: 'maria@example.com' },
@@ -18,6 +21,7 @@ const mockOrders: StoreOrder[] = [
 ];
 
 function assertMockStore(context: MerchantContext) {
+  // Protege contra uma configuração de plataforma real ainda sem adapter implementado.
   if ((context.store?.platform || 'mock') !== 'mock') {
     throw new StoreDataError(`Store platform ${context.store?.platform} ainda não implementada na V1`);
   }
@@ -55,6 +59,7 @@ export function getMockCustomers(): StoreCustomer[] {
 }
 
 export function normalizeStoreStatus(status: string) {
+  // Converte estados específicos de plataformas para um conjunto pequeno comparável.
   const value = status.toLowerCase();
   if (['paid', 'completed', 'processing'].includes(value)) return 'paid';
   if (['pending', 'on-hold', 'awaiting_payment'].includes(value)) return 'pending';
@@ -62,4 +67,3 @@ export function normalizeStoreStatus(status: string) {
   if (['failed', 'refunded'].includes(value)) return 'failed';
   return 'unknown';
 }
-

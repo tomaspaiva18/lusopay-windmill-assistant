@@ -7,7 +7,7 @@ function isExpiredLink(payment: { link_status?: string | null; expires_at?: stri
   const linkStatus = String(payment.link_status ?? '').toLowerCase();
   if (['expired', 'expirado', 'inactive', 'inativo', 'cancelled', 'canceled', 'cancelado'].includes(linkStatus)) return true;
 
-  if (!payment.expires_at || payment.payment_status === 'paid') return false;
+  if (!payment.expires_at || payment.payment_status === 'payment_paid') return false;
   const expiresAt = Date.parse(payment.expires_at);
   return Number.isFinite(expiresAt) && expiresAt < Date.now();
 }

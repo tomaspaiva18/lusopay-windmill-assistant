@@ -6,25 +6,39 @@ schema:
   $schema: https://json-schema.org/draft/2020-12/schema
   type: object
   properties:
-    end_date:
-      type: string
+    amount:
+      type: number
       description: ''
       default: null
-      originalType: string
-    include_raw:
-      type: boolean
+    currency:
+      type: string
       description: ''
-      default: false
+      default: EUR
+      originalType: string
     merchant_id:
       type: string
       description: ''
       default: null
       originalType: string
-    start_date:
+    order_id:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    payment_id:
+      type: string
+      description: ''
+      default: null
+      originalType: string
+    raw_payload:
+      type: ''
+      description: ''
+      default: null
+    status:
       type: string
       description: ''
       default: null
       originalType: string
   required:
-    - start_date
-    - end_date
+    - order_id
+    - status

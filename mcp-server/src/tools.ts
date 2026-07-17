@@ -6,6 +6,9 @@ import { hasPermission, requirePermission } from './auth.js';
 import type { WindmillScriptClient } from './windmill.js';
 import { errorText, jsonText } from './security.js';
 
+// Registo das ferramentas MCP expostas aos agentes.
+// Cada tool aponta para um script Windmill e declara permissões mínimas.
+
 type ToolRuntime = {
   config: McpServerConfig;
   windmill: WindmillScriptClient;
@@ -31,6 +34,7 @@ function registerTool<TArgs extends Record<string, unknown>>(
     handler: ToolHandler<TArgs>;
   },
 ) {
+  // Se o merchant não tiver permissão, a ferramenta nem sequer é anunciada ao cliente MCP.
   if (!hasPermission(runtime.session, config.permission)) return;
 
   server.registerTool(
@@ -46,6 +50,7 @@ function registerTool<TArgs extends Record<string, unknown>>(
     },
     async (args) => {
       try {
+        // Validação defensiva antes de chamar o Windmill.
         requirePermission(runtime.session, config.permission);
         const result = await config.handler(args as TArgs);
         return jsonText(result);
@@ -89,7 +94,7 @@ export function registerTools(server: McpServer, runtime: ToolRuntime): void {
     inputSchema: {
       start_date: optionalDate,
       end_date: optionalDate,
-      status: z.enum(['paid', 'pending', 'cancelled', 'failed', 'unknown']).optional(),
+      status: z.enum(['paid', 'pending', 'cancelled', 'failed', 'payment_paid', 'payment_pending', 'payment_cancelled', 'payment_failed', 'link_created', 'expired', 'unknown']).optional(),
       payment_method: z.string().optional(),
       order_id: z.string().optional(),
       include_raw: includeRaw,
@@ -119,6 +124,18 @@ export function registerTools(server: McpServer, runtime: ToolRuntime): void {
       include_raw: includeRaw,
     },
     handler: (args) => runtime.windmill.run('f/lusopay/obter_pagamento_por_order_id', runtime.session, args),
+  });
+
+  registerTool(server, runtime, {
+    name: 'acompanhar_pagamento',
+    title: 'Dono da loja: acompanhar pagamento',
+    description: 'Acompanha o ciclo de um pagamento por order_id. Usa LusoPay e, se necessário, o registry local de links criados.',
+    permission: 'payments:read',
+    inputSchema: {
+      order_id: z.string().min(1).describe('Identificador da encomenda/order_id.'),
+      include_raw: includeRaw,
+    },
+    handler: (args) => runtime.windmill.run('f/lusopay/acompanhar_pagamento', runtime.session, args),
   });
 
   registerTool(server, runtime, {
